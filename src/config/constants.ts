@@ -13,3 +13,35 @@ export const EDITABLE_STATUSES = ['draft', 'pending_review', 'consent_obtained']
 
 // Youth assent default age threshold
 export const DEFAULT_YOUTH_ASSENT_AGE = 12;
+
+// Default consent expiry (days)
+export const DEFAULT_CONSENT_EXPIRY_DAYS = 365;
+
+// Fixed interests list — adjust per state config in future
+export const INTERESTS_LIST = [
+  'Animals',
+  'Art',
+  'Cooking',
+  'Crafts',
+  'Dance',
+  'Drawing',
+  'Gaming',
+  'Legos',
+  'Movies',
+  'Music',
+  'Outdoors',
+  'Photography',
+  'Reading',
+  'Science',
+  'Singing',
+  'Sports',
+  'Swimming',
+  'Theater',
+] as const;
+
+export const GENDER_OPTIONS = [
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+  { value: 'nonbinary', label: 'Non-binary' },
+  { value: 'undisclosed', label: 'Prefer not to say' },
+] as const;

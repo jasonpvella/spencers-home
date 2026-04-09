@@ -1,0 +1,31 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // All media is stored under private paths scoped by stateId + childId.
+    // Firebase Storage rules cannot do Firestore lookups, so stateId
+    // enforcement is handled at the service layer (storage.ts).
+    // Here we require auth and enforce the path structure.
+    //
+    // Path: states/{stateId}/children/{childId}/{fileName}
+
+    match /states/{stateId}/children/{childId}/{fileName} {
+      // Only authenticated users may read or write media.
+      // The service layer (storage.ts) validates that the calling user's
+      // stateId matches the path stateId before calling uploadMedia/deleteMedia.
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 500 * 1024 * 1024   // 500 MB max
+                   && (
+                     request.resource.contentType.matches('image/.*')
+                     || request.resource.contentType.matches('video/.*')
+                   );
+      allow delete: if request.auth != null;
+    }
+
+    // Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

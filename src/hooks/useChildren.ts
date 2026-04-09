@@ -48,7 +48,8 @@ export function useChild(stateId: string, childId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
+    if (!stateId || !childId) return;
     setLoading(true);
     getChild(stateId, childId)
       .then(setChild)
@@ -56,7 +57,9 @@ export function useChild(stateId: string, childId: string) {
       .finally(() => setLoading(false));
   }, [stateId, childId]);
 
-  return { child, loading, error };
+  useEffect(() => { reload(); }, [reload]);
+
+  return { child, loading, error, reload };
 }
 
 export function useChildActions(stateId: string, userId: string) {

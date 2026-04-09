@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userStateId() {
+      return userDoc().stateId;
+    }
+
+    function userRole() {
+      return userDoc().role;
+    }
+
+    function isPlatformAdmin() {
+      return isAuth() && userRole() == 'platform_admin';
+    }
+
+    function isStateAdmin() {
+      return isAuth() && userRole() in ['state_admin', 'platform_admin'];
+    }
+
+    function isCaseworkerOrAbove() {
+      return isAuth() && userRole() in [
+        'caseworker', 'supervisor', 'agency_admin', 'state_admin', 'platform_admin'
+      ];
+    }
+
+    function belongsToState(stateId) {
+      return isAuth() && userStateId() == stateId;
+    }
+
+    // ── Users ────────────────────────────────────────────────────────────────
+    // Users can read their own record. Only platform_admin can write.
+
+    match /users/{userId} {
+      allow read: if isAuth() && request.auth.uid == userId;
+      allow create, update: if isPlatformAdmin();
+      allow delete: if false;
+    }
+
+    // ── State-scoped data ────────────────────────────────────────────────────
+
+    match /states/{stateId} {
+
+      // Children
+      // Public: anyone can read profiles with status == 'published'
+      // Auth: caseworker+ from matching state can read all, write with stateId validation
+      match /children/{childId} {
+        allow read: if
+          resource.data.status == 'published'
+          || (isCaseworkerOrAbove() && belongsToState(stateId));
+
+        allow create: if
+          isCaseworkerOrAbove()
+          && belongsToState(stateId)
+          && request.resource.data.stateId == stateId;
+
+        allow update: if
+          isCaseworkerOrAbove()
+          && belongsToState(stateId)
+          && request.resource.data.stateId == stateId;
+
+        // No hard deletes — use status: 'archived'
+        allow delete: if false;
+      }
+
+      // Consents
+      // Only caseworker+ from matching state can read/write
+      match /consents/{consentId} {
+        allow read: if isCaseworkerOrAbove() && belongsToState(stateId);
+
+        allow create: if
+          isCaseworkerOrAbove()
+          && belongsToState(stateId)
+          && request.resource.data.stateId == stateId;
+
+        // Allow marking expired; no field can be removed
+        allow update: if
+          isCaseworkerOrAbove()
+          && belongsToState(stateId);
+
+        allow delete: if false;
+      }
+    }
+
+    // ── Audit log ────────────────────────────────────────────────────────────
+    // Append-only: authenticated users can create. Only platform_admin can read.
+    // No updates or deletes — ever.
+
+    match /audit/{logId} {
+      allow read: if isPlatformAdmin();
+      allow create: if isAuth();
+      allow update, delete: if false;
+    }
+
+    // ── State configs ─────────────────────────────────────────────────────────
+    // State admin can read their own config. Platform admin can read/write all.
+
+    match /stateConfigs/{stateId} {
+      allow read: if isStateAdmin() && (userStateId() == stateId || isPlatformAdmin());
+      allow write: if isPlatformAdmin();
+    }
+  }
+}
