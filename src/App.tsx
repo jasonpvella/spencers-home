@@ -3,11 +3,13 @@ import { useAuthListener } from '@/hooks/useAuth';
 import RequireAuth from '@/components/shared/RequireAuth';
 import AppShell from '@/components/shared/AppShell';
 import LoginPage from '@/pages/LoginPage';
+import RegisterPage from '@/pages/RegisterPage';
 import GalleryPage from '@/pages/GalleryPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ProfileFormPage from '@/pages/ProfileFormPage';
 import ProfileDetailPage from '@/pages/ProfileDetailPage';
 import ConsentFormPage from '@/pages/ConsentFormPage';
+import AdminUsersPage from '@/pages/AdminUsersPage';
 import type { ReactNode } from 'react';
 
 function AuthShell({ children }: { children: ReactNode }) {
@@ -26,6 +28,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<GalleryPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* Caseworker — auth required */}
       <Route
@@ -66,6 +69,16 @@ function AppRoutes() {
           <AuthShell>
             <ConsentFormPage />
           </AuthShell>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <RequireAuth allowedRoles={['state_admin', 'agency_admin', 'platform_admin']}>
+            <AppShell>
+              <AdminUsersPage />
+            </AppShell>
+          </RequireAuth>
         }
       />
 

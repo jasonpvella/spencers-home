@@ -4,6 +4,8 @@ import { auth } from '@/config/firebase';
 import { useCurrentUser } from '@/hooks/useAuth';
 import type { ReactNode } from 'react';
 
+const ADMIN_ROLES = ['state_admin', 'agency_admin', 'platform_admin'] as const;
+
 interface Props {
   children: ReactNode;
 }
@@ -49,6 +51,20 @@ export default function AppShell({ children }: Props) {
               >
                 Gallery
               </NavLink>
+              {user && ADMIN_ROLES.includes(user.role as typeof ADMIN_ROLES[number]) && (
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    `text-sm px-3 py-1.5 rounded-md transition-colors ${
+                      isActive
+                        ? 'bg-brand-50 text-brand-700 font-medium'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  Users
+                </NavLink>
+              )}
             </div>
           </div>
 

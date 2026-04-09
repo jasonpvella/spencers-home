@@ -65,6 +65,18 @@ export default function ProfileDetailPage() {
     }
   }
 
+  async function handleArchive() {
+    if (!childId || !child) return;
+    if (!window.confirm(`Archive ${child.firstName}'s profile? This removes it from all queues but does not delete any data.`)) return;
+    try {
+      await update(childId, { status: 'archived' });
+      toast(`${child.firstName}'s profile archived`, 'info');
+      reload();
+    } catch {
+      toast('Failed to archive profile', 'error');
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-12 text-sm text-gray-400 text-center">
@@ -85,6 +97,7 @@ export default function ProfileDetailPage() {
   const canPublish = child.consentStatus === 'active' && child.status !== 'published';
   const canAddConsent = child.consentStatus !== 'active' && child.status !== 'published' && child.status !== 'archived';
   const canSubmitForReview = child.status === 'draft';
+  const canArchive = child.status !== 'archived';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -210,7 +223,7 @@ export default function ProfileDetailPage() {
           {/* Metadata */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Record</p>
-            <dl className="space-y-1.5 text-xs text-gray-500">
+            <dl className="space-y-1.5 text-xs text-gray-500 mb-4">
               <div className="flex justify-between">
                 <dt>Profile ID</dt>
                 <dd className="font-mono text-gray-400">{child.id.slice(0, 12)}…</dd>
@@ -224,6 +237,15 @@ export default function ProfileDetailPage() {
                 <dd>{child.viewCount}</dd>
               </div>
             </dl>
+            {canArchive && (
+              <button
+                onClick={handleArchive}
+                disabled={saving}
+                className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+              >
+                Archive profile
+              </button>
+            )}
           </div>
         </div>
 
