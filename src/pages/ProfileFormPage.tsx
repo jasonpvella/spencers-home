@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useChild, useChildActions } from '@/hooks/useChildren';
 import { INTERESTS_LIST, GENDER_OPTIONS } from '@/config/constants';
+import { checkForPii } from '@/utils/pii';
 import type { Gender } from '@/types';
 
 const schema = z.object({
@@ -59,6 +60,8 @@ export default function ProfileFormPage({ mode }: Props) {
   });
 
   const icwaFlag = watch('icwaFlag');
+  const bioValue = watch('bio') ?? '';
+  const piiWarnings = checkForPii(bioValue);
 
   useEffect(() => {
     if (mode === 'edit' && child) {
@@ -193,9 +196,21 @@ export default function ProfileFormPage({ mode }: Props) {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
               placeholder="Write in first or third person. No last name, school name, location, or case history."
             />
-            <p className="text-xs text-gray-400 mt-1">
-              Do not include last name, school, location, or case details.
-            </p>
+            {piiWarnings.length > 0 && (
+              <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 space-y-0.5">
+                <p className="text-xs font-medium text-red-700">Possible PII detected — review before saving:</p>
+                {piiWarnings.map((w, i) => (
+                  <p key={i} className="text-xs text-red-600">
+                    "{w.match}" — {w.label}
+                  </p>
+                ))}
+              </div>
+            )}
+            {piiWarnings.length === 0 && (
+              <p className="text-xs text-gray-400 mt-1">
+                Do not include last name, school, location, or case details.
+              </p>
+            )}
             {errors.bio && <p className="text-xs text-red-500 mt-1">{errors.bio.message}</p>}
           </div>
         </div>
