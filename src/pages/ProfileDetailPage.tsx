@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useChild, useChildActions } from '@/hooks/useChildren';
 import MediaUpload from '@/components/profile/MediaUpload';
+import { useToast } from '@/components/shared/Toaster';
 import { EDITABLE_STATUSES } from '@/config/constants';
 import type { ProfileStatus } from '@/types';
 
@@ -40,17 +41,28 @@ export default function ProfileDetailPage() {
 
   const { child, loading, error, reload } = useChild(stateId, childId ?? '');
   const { publish, update, saving } = useChildActions(stateId, userId);
+  const { toast } = useToast();
 
   async function handlePublish() {
     if (!childId) return;
-    await publish(childId);
-    reload();
+    try {
+      await publish(childId);
+      toast(`${child?.firstName ?? 'Profile'} is now published`, 'success');
+      reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Publish failed', 'error');
+    }
   }
 
   async function handleSubmitForReview() {
     if (!childId || !child) return;
-    await update(childId, { status: 'pending_review' });
-    reload();
+    try {
+      await update(childId, { status: 'pending_review' });
+      toast('Submitted for review', 'success');
+      reload();
+    } catch {
+      toast('Failed to submit for review', 'error');
+    }
   }
 
   if (loading) {

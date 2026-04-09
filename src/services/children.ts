@@ -5,6 +5,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  increment,
   query,
   where,
   serverTimestamp,
@@ -81,6 +82,12 @@ export async function updateChild(
       details: { status: data.status },
     });
   }
+}
+
+export async function recordProfileView(stateId: string, childId: string): Promise<void> {
+  await updateDoc(doc(db, 'states', stateId, 'children', childId), {
+    viewCount: increment(1),
+  });
 }
 
 export async function publishProfile(

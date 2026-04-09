@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactPlayer from 'react-player';
+import { recordProfileView } from '@/services/children';
 import type { ChildProfile } from '@/types';
 
 interface Props {
   child: ChildProfile;
+  stateId: string;
 }
 
-export default function ProfileCard({ child }: Props) {
+export default function ProfileCard({ child, stateId }: Props) {
   const [playing, setPlaying] = useState(false);
   const hasVideo = Boolean(child.videoUrl);
   const hasPhoto = child.photoUrls.length > 0;
+  const viewRecorded = useRef(false);
+
+  useEffect(() => {
+    if (viewRecorded.current) return;
+    viewRecorded.current = true;
+    // Fire-and-forget — view tracking failure must never break the gallery
+    recordProfileView(stateId, child.id).catch(() => undefined);
+  }, [stateId, child.id]);
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm flex flex-col">

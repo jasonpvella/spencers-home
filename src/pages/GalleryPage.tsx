@@ -153,7 +153,7 @@ export default function GalleryPage() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((child) => (
-            <ProfileCard key={child.id} child={child} />
+            <ProfileCard key={child.id} child={child} stateId={DEFAULT_STATE_ID} />
           ))}
         </div>
       </main>

@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useChild } from '@/hooks/useChildren';
 import { createConsent } from '@/services/consent';
+import { useToast } from '@/components/shared/Toaster';
 import { DEFAULT_CONSENT_EXPIRY_DAYS, DEFAULT_YOUTH_ASSENT_AGE } from '@/config/constants';
 
 const schema = z.object({
@@ -30,6 +31,7 @@ export default function ConsentFormPage() {
 
   const { child, loading } = useChild(stateId, childId ?? '');
 
+  const { toast } = useToast();
   const sigCanvasRef = useRef<SignatureCanvas>(null);
   const [sigError, setSigError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -85,6 +87,7 @@ export default function ConsentFormPage() {
         youthAssentObtained: values.youthAssentObtained,
         icwaTribalNotified: values.icwaTribalNotified,
       });
+      toast('Consent saved — profile is ready to publish', 'success');
       navigate(`/profile/${childId}`);
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to save consent');

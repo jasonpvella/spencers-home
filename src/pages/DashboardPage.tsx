@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useAllChildren } from '@/hooks/useChildren';
+import { useExpiringConsents } from '@/hooks/useConsent';
 
 export default function DashboardPage() {
   const user = useCurrentUser();
   const stateId = user?.stateId ?? '';
   const { children, loading } = useAllChildren(stateId);
+  const { consents: expiringConsents } = useExpiringConsents(stateId, 30);
 
   const counts = {
     draft: children.filter((c) => c.status === 'draft').length,
@@ -28,6 +30,30 @@ export default function DashboardPage() {
           New Profile
         </Link>
       </div>
+
+      {/* Expiring consent alerts */}
+      {expiringConsents.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-6">
+          <p className="text-sm font-medium text-yellow-800 mb-1">
+            {expiringConsents.length} consent{expiringConsents.length > 1 ? 's' : ''} expiring within 30 days
+          </p>
+          <ul className="space-y-0.5">
+            {expiringConsents.map((c) => {
+              const expiresAt = (c.expiresAt as unknown as { toDate: () => Date }).toDate();
+              const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const matchingChild = children.find((ch) => ch.id === c.childId);
+              return (
+                <li key={c.id} className="text-xs text-yellow-700">
+                  <Link to={`/profile/${c.childId}`} className="underline hover:text-yellow-900">
+                    {matchingChild?.firstName ?? c.childId}
+                  </Link>{' '}
+                  — expires in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">

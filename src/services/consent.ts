@@ -2,11 +2,14 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   addDoc,
   updateDoc,
   serverTimestamp,
   Timestamp,
   runTransaction,
+  query,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { writeAuditLog } from './audit';
@@ -86,6 +89,22 @@ export async function createConsent(params: {
   });
 
   return consentId;
+}
+
+export async function listExpiringConsents(
+  stateId: string,
+  withinDays: number
+): Promise<ConsentRecord[]> {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + withinDays * 24 * 60 * 60 * 1000);
+
+  const q = query(
+    consentsRef(stateId),
+    where('expiresAt', '<=', Timestamp.fromDate(cutoff)),
+    where('expiresAt', '>=', Timestamp.fromDate(now))
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ConsentRecord);
 }
 
 export async function markConsentExpired(

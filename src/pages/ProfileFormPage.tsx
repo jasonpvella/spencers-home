@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/hooks/useAuth';
 import { useChild, useChildActions } from '@/hooks/useChildren';
 import { INTERESTS_LIST, GENDER_OPTIONS } from '@/config/constants';
 import { checkForPii } from '@/utils/pii';
+import { useToast } from '@/components/shared/Toaster';
 import type { Gender } from '@/types';
 
 const schema = z.object({
@@ -38,6 +39,7 @@ export default function ProfileFormPage({ mode }: Props) {
   );
 
   const { create, update, saving, error } = useChildActions(stateId, userId);
+  const { toast } = useToast();
 
   const {
     register,
@@ -96,9 +98,11 @@ export default function ProfileFormPage({ mode }: Props) {
 
     if (mode === 'create') {
       const newId = await create(payload);
+      toast('Profile created', 'success');
       navigate(`/profile/${newId}`);
     } else if (childId) {
       await update(childId, payload);
+      toast('Profile saved', 'success');
       navigate(`/profile/${childId}`);
     }
   }

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { uploadMedia } from '@/services/storage';
 import { updateChild } from '@/services/children';
+import { useToast } from '@/components/shared/Toaster';
 import type { ChildProfile } from '@/types';
 
 interface Props {
@@ -22,6 +23,7 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;  // 10 MB
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024; // 500 MB
 
 export default function MediaUpload({ child, userId, onUpdate }: Props) {
+  const { toast } = useToast();
   const [imageUpload, setImageUpload] = useState<UploadState | null>(null);
   const [videoUpload, setVideoUpload] = useState<UploadState | null>(null);
 
@@ -45,13 +47,15 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
           userId
         );
         setImageUpload(null);
+        toast('Photo uploaded', 'success');
         onUpdate();
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Upload failed';
         setImageUpload((s) => s && { ...s, error: msg });
+        toast(msg, 'error');
       }
     },
-    [child, userId, onUpdate]
+    [child, userId, onUpdate, toast]
   );
 
   const handleVideoDrop = useCallback(
@@ -74,13 +78,15 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
           userId
         );
         setVideoUpload(null);
+        toast('Video uploaded', 'success');
         onUpdate();
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Upload failed';
         setVideoUpload((s) => s && { ...s, error: msg });
+        toast(msg, 'error');
       }
     },
-    [child, userId, onUpdate]
+    [child, userId, onUpdate, toast]
   );
 
   const { getRootProps: getImageRootProps, getInputProps: getImageInputProps, isDragActive: isImageDragActive } =
