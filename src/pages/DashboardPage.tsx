@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useAllChildren } from '@/hooks/useChildren';
@@ -8,13 +9,23 @@ export default function DashboardPage() {
   const stateId = user?.stateId ?? '';
   const { children, loading } = useAllChildren(stateId);
   const { consents: expiringConsents } = useExpiringConsents(stateId, 30);
+  const [search, setSearch] = useState('');
 
   const counts = {
     draft: children.filter((c) => c.status === 'draft').length,
     pending_review: children.filter((c) => c.status === 'pending_review').length,
     published: children.filter((c) => c.status === 'published').length,
+    inquiries: children.reduce((sum, c) => sum + (c.inquiryCount ?? 0), 0),
     total: children.length,
   };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return children;
+    return children.filter(
+      (c) => c.firstName.toLowerCase().includes(q) || c.status.includes(q)
+    );
+  }, [children, search]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -61,7 +72,7 @@ export default function DashboardPage() {
           { label: 'Total', value: counts.total },
           { label: 'Published', value: counts.published },
           { label: 'Pending Review', value: counts.pending_review },
-          { label: 'Drafts', value: counts.draft },
+          { label: 'New Inquiries', value: counts.inquiries },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-2xl font-semibold text-gray-900">{loading ? '—' : stat.value}</p>
@@ -72,16 +83,25 @@ export default function DashboardPage() {
 
       {/* Children list */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-medium text-gray-700">All Profiles</h2>
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+          <h2 className="text-sm font-medium text-gray-700 flex-shrink-0">All Profiles</h2>
+          <input
+            type="search"
+            placeholder="Search by name…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="ml-auto w-44 border border-gray-300 rounded-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
         </div>
         {loading ? (
           <p className="text-sm text-gray-400 px-4 py-8 text-center">Loading…</p>
-        ) : children.length === 0 ? (
-          <p className="text-sm text-gray-400 px-4 py-8 text-center">No profiles yet.</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-gray-400 px-4 py-8 text-center">
+            {search ? 'No matches.' : 'No profiles yet.'}
+          </p>
         ) : (
           <ul className="divide-y divide-gray-100">
-            {children.map((child) => (
+            {filtered.map((child) => (
               <li key={child.id}>
                 <Link
                   to={`/profile/${child.id}`}
@@ -89,7 +109,14 @@ export default function DashboardPage() {
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-900">{child.firstName}</p>
-                    <p className="text-xs text-gray-400">Age {child.ageAtListing}</p>
+                    <p className="text-xs text-gray-400">
+                      Age {child.ageAtListing}
+                      {child.inquiryCount > 0 && (
+                        <span className="ml-2 text-brand-600 font-medium">
+                          {child.inquiryCount} inquiry{child.inquiryCount > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(child.status)}`}>
                     {child.status.replace(/_/g, ' ')}

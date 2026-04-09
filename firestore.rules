@@ -71,6 +71,14 @@ service cloud.firestore {
 
         // No hard deletes — use status: 'archived'
         allow delete: if false;
+
+        // Inquiries — public users can create (no auth required for gallery CTA)
+        // Caseworkers from the same state can read. No updates or deletes.
+        match /inquiries/{inquiryId} {
+          allow create: if true;
+          allow read: if isCaseworkerOrAbove() && belongsToState(stateId);
+          allow update, delete: if false;
+        }
       }
 
       // Consents

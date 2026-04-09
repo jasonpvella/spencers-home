@@ -4,29 +4,41 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Sprint 1 core loop is feature-complete. Caseworker can now: create a profile → upload photos/video → capture canvas-signed consent → publish to gallery. All routes live, TypeScript clean, security rules deployed.
+**Current Focus:** All of Sprint 1 + substantial Phase 2/3 features built in a single overnight session. Platform is now demo-ready for Nebraska DHHS.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
 - Firebase v10 connected — project `spencers-home-dev` ✅
-- Data models: `ChildProfile` (+ `gender` field), `ConsentRecord`, `StateConfig`, `User`, `AuditLog` ✅
-- Service layer: `children.ts`, `consent.ts`, `storage.ts`, `audit.ts` ✅
-- Custom hooks: `useAuth`, `useChildren` (incl. `reload` on `useChild`) ✅
+- `firebase.json`, `.firebaserc`, `firestore.indexes.json` for deploy + emulators ✅
+- Emulator connection in `firebase.ts` via `VITE_USE_EMULATORS=true` ✅
+- Data models + all service layer (`children`, `consent`, `storage`, `audit`, `users`, `inquiries`) ✅
+- Custom hooks: `useAuth`, `useChildren` (with reload), `useConsent`, ✅
 - Zustand auth store ✅
-- AppShell nav (sticky, role label, sign-out) ✅
-- Pages: Login, Dashboard, Gallery, ProfileFormPage, ProfileDetailPage, ConsentFormPage ✅
-- MediaUpload component (react-dropzone, per-file progress bar, photo + video) ✅
-- Routes wired: `/profile/new`, `/profile/:id`, `/profile/:id/edit`, `/profile/:id/consent` ✅
-- Firestore security rules (`firestore.rules`) — stateId-scoped, role-gated, audit append-only ✅
-- Storage security rules (`storage.rules`) — auth-required, MIME + size guarded ✅
+- **Auth flows:** Login + password reset + "forgot password" + self-service registration (pending approval) ✅
+- **RequireAuth:** loading state, inactive/pending-approval wall, role gate ✅
+- **AppShell:** sticky nav, role badge, sign-out, Users link for admins ✅
+- **Pages built:**
+  - GalleryPage: video-first ProfileCards, age/gender/video filters, result count ✅
+  - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search ✅
+  - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section ✅
+  - ProfileDetailPage: status/consent badges, action buttons, consent record details, inline media, archive ✅
+  - ConsentFormPage: canvas draw signature, youth assent + ICWA conditional fields ✅
+  - AdminUsersPage: list users by state, approve/deactivate, role change ✅
+  - RegisterPage: self-service caseworker account, pending approval flow ✅
+- **MediaUpload component:** react-dropzone, per-file progress bar, photo + video ✅
+- **InquiryModal:** public gallery CTA, writes to Firestore, increments inquiryCount ✅
+- **Toast system:** Radix Toast, success/error/info, wired into all mutations ✅
+- **Firestore security rules:** stateId-scoped, role hierarchy, audit append-only, public inquiry creates ✅
+- **Storage security rules:** auth-required, MIME guard, 500 MB cap ✅
 - TypeScript: 0 errors ✅
 
 **Next session — work items in priority order:**
-1. Firebase emulator setup (local dev without hitting live project)
-2. `firebase.json` + `.firebaserc` for deploy pipeline
-3. Phase 2 start: state config panel, consent expiry alerts, forbidden PII field validation in bio editor
-4. Gallery filter/search (age, gender, video available) — Phase 3 but low-effort win
-5. Nebraska-specific consent language (coordinate with DHHS — consent form is placeholder)
+1. Coordinator/admin: view inquiries on ProfileDetailPage (read from subcollection)
+2. State configuration panel (branding, consent model, PII rules) — Phase 2
+3. Nebraska-specific consent language (coordinate with DHHS)
+4. Firebase emulator: seed script for local dev with test data
+5. AdoptUSKids CSV export for published profiles (Phase 3)
+6. Lighthouse audit + performance pass (Phase 4 readiness)
 
 ---
 
@@ -59,31 +71,41 @@ Consent form text is explicitly flagged as placeholder (`consentLanguageVersion:
 ### Storage Rules — Auth Enforced, stateId at Service Layer (2026-04-09)
 Firebase Storage rules cannot do Firestore lookups, so stateId matching is enforced in `storage.ts` (service layer), not in storage rules. Storage rules enforce: authenticated user, MIME type (image/* or video/*), max 500 MB.
 
+### Public Inquiries — No Auth Required (2026-04-09)
+Inquiry creates (`states/{stateId}/children/{childId}/inquiries`) are allowed without authentication in Firestore rules. Rationale: families browsing the gallery should be able to submit interest without creating an account. Inquiries are read-only for caseworkers, append-only, never updatable or deletable.
+
+### Caseworker Registration — Pending Approval Flow (2026-04-09)
+New users self-register via `/register`. Firebase Auth account is created immediately; Firestore user doc is set with `active: false`. State admin approves via `/admin/users`. RequireAuth shows a pending-approval wall for `active: false` users rather than redirecting to login.
+
+### ReactPlayer v3 Type Workaround (2026-04-09)
+react-player v3 ships narrowed types that omit `url` from the public props interface. ProfileCard uses a local `Player` alias typed with the props actually needed. This is isolated to one file and explicitly commented.
+
 ---
 
 ## Historical Log
 
-### 2026-04-09 — Sprint 1 Core Loop Complete (overnight build)
-- Added `gender: Gender` field to `ChildProfile` type
-- Added `DEFAULT_CONSENT_EXPIRY_DAYS`, `INTERESTS_LIST`, `GENDER_OPTIONS` to constants
-- Installed `react-signature-canvas` + `@types/react-signature-canvas`
-- Added `reload()` to `useChild` hook (matches pattern from `useAllChildren`)
-- **AppShell** (`components/shared/AppShell.tsx`): sticky nav, role badge, sign-out
-- **ProfileFormPage** (`pages/ProfileFormPage.tsx`): create + edit modes, all fields, interest tag picker, ICWA conditional section, react-hook-form + zod validation
-- **MediaUpload** (`components/profile/MediaUpload.tsx`): react-dropzone for photos + video, progress bar, replaces video on re-upload
-- **ProfileDetailPage** (`pages/ProfileDetailPage.tsx`): full profile view, status + consent badges, ICWA warning, publish/review/consent action buttons, inline media upload
-- **ConsentFormPage** (`pages/ConsentFormPage.tsx`): canvas draw signature, youth assent + ICWA tribal notification conditional fields, placeholder consent language with visible warning, 1-year expiry
-- **App.tsx**: all routes wired, `AuthShell` wrapper combines RequireAuth + AppShell
-- **firestore.rules**: stateId-scoped reads/writes, role hierarchy, audit append-only, no hard deletes
-- **storage.rules**: auth required, MIME guard, 500 MB cap, deny-all fallback
-- TypeScript: 0 errors confirmed
+### 2026-04-09 — Full overnight build (Sprint 1 complete + Phase 2/3 features)
+
+**Commit 1 — Sprint 1 core loop:**
+ProfileFormPage, ConsentFormPage (canvas sig), MediaUpload, ProfileDetailPage, AppShell, all routes, firestore.rules, storage.rules, gender field, useChild reload.
+
+**Commit 2 — Emulator config + PII warnings + gallery filters:**
+firebase.json, .firebaserc, firestore.indexes.json, emulator connection in firebase.ts, real-time PII detection in bio editor, GalleryPage filters (age range, gender, video toggle).
+
+**Commit 3 — Toasts + consent expiry alerts + view tracking:**
+Radix Toast system, toasts wired into all mutations, useExpiringConsents + dashboard alert strip, recordProfileView (fire-and-forget increment), ProfileCard stateId prop.
+
+**Commit 4 — Auth flows + archive + admin user management:**
+LoginPage password reset, RegisterPage (pending approval), RequireAuth inactive wall, ProfileDetailPage archive action, AdminUsersPage (approve/deactivate/role change), services/users.ts.
+
+**Commit 5 — Dashboard search + consent details + gallery inquiry:**
+Dashboard profile text search + inquiry count stat, ProfileDetailPage consent record details panel, InquiryModal (public Firestore write, increments inquiryCount), firestore.rules updated for public inquiry creates, ReactPlayer v3 type workaround.
 
 ### 2026-04-08 — Project Bootstrap + Firebase Connected
 - User provided full PRD (Spencer's Home Digital Permanency Platform v1.0)
 - Scaffolded complete project: Vite + React 18 + TypeScript strict + Tailwind + Firebase v10
 - Built all data model interfaces, service layer, hooks, pages, and routing
-- Added CLAUDE.md, docs/JOURNAL.md, docs/PRD.md, .claude/settings.json — matching Fundrasing_Campaign project setup pattern (Save Project protocol + model selection rules)
+- Added CLAUDE.md, docs/JOURNAL.md, docs/PRD.md, .claude/settings.json
 - User created `spencers-home-dev` Firebase project and filled in `.env.local`
-- `ReactPlayer` import changed from `/lazy` to direct import
 - Zero TypeScript errors confirmed
 - Commits: `d13907e` (scaffold), `5a914a8` (Claude config + docs)

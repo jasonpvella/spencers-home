@@ -4,7 +4,9 @@ import { useChild, useChildActions } from '@/hooks/useChildren';
 import MediaUpload from '@/components/profile/MediaUpload';
 import { useToast } from '@/components/shared/Toaster';
 import { EDITABLE_STATUSES } from '@/config/constants';
-import type { ProfileStatus } from '@/types';
+import { getConsent } from '@/services/consent';
+import { useState, useEffect } from 'react';
+import type { ProfileStatus, ConsentRecord } from '@/types';
 
 const STATUS_LABEL: Record<ProfileStatus, string> = {
   draft: 'Draft',
@@ -42,6 +44,17 @@ export default function ProfileDetailPage() {
   const { child, loading, error, reload } = useChild(stateId, childId ?? '');
   const { publish, update, saving } = useChildActions(stateId, userId);
   const { toast } = useToast();
+  const [consentRecord, setConsentRecord] = useState<ConsentRecord | null>(null);
+
+  useEffect(() => {
+    if (child?.consentId && stateId) {
+      getConsent(stateId, child.consentId)
+        .then(setConsentRecord)
+        .catch(() => undefined);
+    } else {
+      setConsentRecord(null);
+    }
+  }, [child?.consentId, stateId]);
 
   async function handlePublish() {
     if (!childId) return;
@@ -217,6 +230,49 @@ export default function ProfileDetailPage() {
             <div className="bg-orange-50 rounded-xl border border-orange-100 p-5">
               <p className="text-xs font-medium text-orange-700 uppercase tracking-wide mb-2">ICWA Notes</p>
               <p className="text-sm text-orange-900 leading-relaxed">{child.icwaNotes}</p>
+            </div>
+          )}
+
+          {/* Consent record */}
+          {consentRecord && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Consent</p>
+              <dl className="space-y-1.5 text-xs text-gray-500">
+                <div className="flex justify-between">
+                  <dt>Signed by</dt>
+                  <dd className="text-gray-700">
+                    {(consentRecord.formData?.signerName as string) ?? '—'}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Authority</dt>
+                  <dd className="text-gray-700 capitalize">{consentRecord.signerRole}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Signed</dt>
+                  <dd>
+                    {(consentRecord.signedAt as unknown as { toDate: () => Date }).toDate().toLocaleDateString()}
+                  </dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Expires</dt>
+                  <dd>
+                    {(consentRecord.expiresAt as unknown as { toDate: () => Date }).toDate().toLocaleDateString()}
+                  </dd>
+                </div>
+                {consentRecord.youthAssentObtained && (
+                  <div className="flex justify-between">
+                    <dt>Youth assent</dt>
+                    <dd className="text-green-600">Obtained</dd>
+                  </div>
+                )}
+                {consentRecord.icwaTribalNotified && (
+                  <div className="flex justify-between">
+                    <dt>ICWA tribal notif.</dt>
+                    <dd className="text-green-600">Completed</dd>
+                  </div>
+                )}
+              </dl>
             </div>
           )}
 
