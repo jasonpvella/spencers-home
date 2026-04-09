@@ -4,26 +4,25 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Initial scaffold complete. Firebase project not yet created — `.env.local` is empty. Sprint 1 goal is the core caseworker loop: create child profile → upload media → capture consent → publish to gallery.
+**Current Focus:** Firebase connected and TypeScript clean. Ready to build Sprint 1 core loop: caseworker creates profile → uploads media → captures consent → publishes to gallery.
 
 **Scaffold status:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
-- Firebase v10 (modular) wired up, awaiting project credentials ⏳
+- Firebase v10 connected — project `spencers-home-dev`, `.env.local` filled ✅
 - Data models: `ChildProfile`, `ConsentRecord`, `StateConfig`, `User`, `AuditLog` ✅
 - Service layer: `children.ts`, `consent.ts`, `storage.ts`, `audit.ts` ✅
 - Custom hooks: `useAuth`, `useChildren` ✅
 - Zustand auth store ✅
 - Pages: Login, Dashboard (status counts), Gallery (video-first ProfileCard) ✅
 - Route guard (`RequireAuth`), PII warning utility (`pii.ts`) ✅
-- `.env.local` template, `.gitignore`, `@/` path aliases ✅
+- TypeScript: 0 errors ✅
 
 **Next session — work items in priority order:**
-1. Create `spencers-home-dev` Firebase project, fill in `.env.local`
-2. Set up Firebase emulators for local dev
-3. Write Firestore security rules
-4. Build child profile create/edit form (`ProfileFormPage`)
-5. Consent form with signature capture
-6. Media upload UI (React Dropzone → Firebase Storage)
+1. Firebase emulators setup for local dev
+2. Firestore security rules
+3. Child profile create/edit form (`ProfileFormPage`)
+4. Consent form with signature capture
+5. Media upload UI (React Dropzone → Firebase Storage)
 
 ---
 
@@ -45,9 +44,12 @@ All profile status changes, consent events, media uploads, and user role changes
 
 ## Historical Log
 
-### 2026-04-08 — Project Bootstrap
+### 2026-04-08 — Project Bootstrap + Firebase Connected
 - User provided full PRD (Spencer's Home Digital Permanency Platform v1.0)
 - Scaffolded complete project: Vite + React 18 + TypeScript strict + Tailwind + Firebase v10
 - Built all data model interfaces, service layer, hooks, pages, and routing
-- Zero TypeScript errors on first type-check
-- First git commit: `d13907e`
+- Added CLAUDE.md, docs/JOURNAL.md, docs/PRD.md, .claude/settings.json — matching Fundrasing_Campaign project setup pattern (Save Project protocol + model selection rules)
+- User created `spencers-home-dev` Firebase project and filled in `.env.local`
+- `ReactPlayer` import changed from `/lazy` to direct import
+- Zero TypeScript errors confirmed
+- Commits: `d13907e` (scaffold), `5a914a8` (Claude config + docs)

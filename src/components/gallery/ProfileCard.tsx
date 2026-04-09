@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ReactPlayer from 'react-player/lazy';
+import ReactPlayer from 'react-player';
 import type { ChildProfile } from '@/types';
 
 interface Props {
