@@ -27,35 +27,35 @@ Arkansas Project Zero (theprojectzero.org): 200+ professional films, 138K Facebo
 
 ## Build Phases
 
-### Phase 1 — Core Loop (Sprint 1–2, Weeks 1–4) ← CURRENT
+### Phase 1 — Core Loop (Sprint 1–2, Weeks 1–4) ✅ COMPLETE
 **Goal: Caseworker can create a child profile and publish it to a gallery.**
 
-- [ ] Firebase project setup (dev + prod environments)
-- [ ] Authentication (email/password, role-based)
-- [ ] Child profile CRUD
-- [ ] Basic digital consent form with signature capture
-- [ ] Profile status workflow (Draft → Published)
-- [ ] Public gallery page (mobile-responsive, video-first)
-- [ ] State admin dashboard
-- [ ] Private media storage with signed URL generation
+- [x] Firebase project setup (dev + prod environments)
+- [x] Authentication (email/password, role-based, self-service registration + approval)
+- [x] Child profile CRUD
+- [x] Basic digital consent form with signature capture (canvas draw)
+- [x] Profile status workflow (Draft → Pending Review → Published → Archived)
+- [x] Public gallery page (mobile-responsive, video-first, age/gender/video filters)
+- [x] State admin dashboard (status stats, expiring consent alerts, inquiry counts, search)
+- [x] Private media storage with signed URL generation
 
-### Phase 2 — Compliance Layer (Sprint 3–4, Weeks 5–8)
+### Phase 2 — Compliance Layer (Sprint 3–4, Weeks 5–8) ← CURRENT
 **Goal: State admin can configure platform to match their legal requirements.**
 
 - [ ] State configuration panel (consent model, PII rules, branding)
-- [ ] Role-based access control (Firestore security rules)
-- [ ] Consent expiry tracking + alerts
-- [ ] ICWA flag field on child profile
-- [ ] Immutable audit logging (already built in service layer)
-- [ ] Forbidden field validation (bio editor flags prohibited PII)
+- [x] Role-based access control (Firestore security rules)
+- [x] Consent expiry tracking + alerts
+- [x] ICWA flag field on child profile
+- [x] Immutable audit logging (already built in service layer)
+- [x] Forbidden field validation (bio editor flags prohibited PII)
 
 ### Phase 3 — Engagement Layer (Sprint 5–6, Weeks 9–12)
 **Goal: Families can browse, save, and inquire about children.**
 
 - [ ] Family registration + verified browsing tier
-- [ ] Profile engagement metrics (views, saves, inquiries)
+- [x] Profile engagement metrics (views, saves, inquiries)
 - [ ] Caseworker notification on family inquiry
-- [ ] Gallery filter and search (age, gender, siblings, video available)
+- [x] Gallery filter and search (age, gender, video available)
 - [ ] AdoptUSKids export (one-click syndication)
 - [ ] "Save to Favorites" for registered families
 

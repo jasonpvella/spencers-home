@@ -101,6 +101,11 @@ LoginPage password reset, RegisterPage (pending approval), RequireAuth inactive 
 **Commit 5 — Dashboard search + consent details + gallery inquiry:**
 Dashboard profile text search + inquiry count stat, ProfileDetailPage consent record details panel, InquiryModal (public Firestore write, increments inquiryCount), firestore.rules updated for public inquiry creates, ReactPlayer v3 type workaround.
 
+### 2026-04-09 — Save Project (end of overnight session)
+- No new code — journal already written inline with each commit during build
+- PRD updated: Phase 1 fully checked off, Phase 2 CURRENT, partial Phase 3 items checked
+- Next session should start with: view inquiries on ProfileDetailPage, state config panel, Nebraska consent language
+
 ### 2026-04-08 — Project Bootstrap + Firebase Connected
 - User provided full PRD (Spencer's Home Digital Permanency Platform v1.0)
 - Scaffolded complete project: Vite + React 18 + TypeScript strict + Tailwind + Firebase v10
