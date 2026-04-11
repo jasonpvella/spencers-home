@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** v1 deployment. App is live at https://spencers-home-dev.web.app. Firestore rules deployed. Firebase Storage not yet initialized (needs manual Firebase Console setup before storage rules can deploy and media uploads work). Next session: enable Storage in Firebase Console, then Task 2 — bootstrap platform_admin + test state, then run the full core loop end-to-end on the live URL.
+**Current Focus:** v1 infrastructure complete. Storage live, platform_admin bootstrapped. Ready for end-to-end core loop validation on the live URL.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -33,8 +33,11 @@
 - **InquiryModal:** public gallery CTA, writes to Firestore, increments inquiryCount, triggers caseworker notification ✅
 - **Toast system:** Radix Toast, success/error/info, wired into all mutations ✅
 - **Firestore security rules:** full audit complete, 5 critical bugs fixed, field-level update restrictions added, `ssoProviders` public read ✅
-- **Storage security rules:** written, not yet deployed (Storage not initialized) ✅
+- **Storage rules deployed** ✅
 - **Emulator seed script:** `scripts/seed-emulator.ts` — 3 users, 4 child profiles, 2 consents, 2 inquiries, NE state config ✅
+- **Admin bootstrap script:** `scripts/bootstrap-admin.ts` — creates platform_admin + Test State in live Firebase ✅
+- **Platform admin live:** `jason@spencershome.org` / uid: `EoCy0vcpn8RIucC5bsRuOOhn3ak2` ✅
+- **Test State created:** `states/ts` ✅
 - **Route code splitting:** all 12 pages lazy-loaded; Firebase + vendor in separate cacheable chunks ✅
 - **Image lazy loading:** `loading="lazy"` + `decoding="async"` on gallery photos ✅
 - **HTML preconnect:** Firebase domains + Google Fonts preconnected in index.html ✅
@@ -44,12 +47,11 @@
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Enable Firebase Storage in Console (Firebase Console → spencers-home-dev → Storage → Get Started), then run `firebase deploy --only storage`
-2. Task 2: bootstrap platform_admin — run script to set role + create Test State config at `states/ts`
-3. Walk the full core loop on the live URL: create profile → consent → publish → browse gallery → submit inquiry → see notification
-4. Task 3: strip SSO from login page and state config UI
-5. Task 4: sponsor logo uploads in state config + landing page
-6. Task 5: polish pass (empty gallery state, mobile check, console errors)
+1. Change platform admin password on the live site (currently `ChangeMe123!`)
+2. Walk the full core loop on the live URL: create profile → consent → publish → browse gallery → submit inquiry → see notification
+3. Task 3: strip SSO from login page and state config UI
+4. Task 4: sponsor logo uploads in state config + landing page
+5. Task 5: polish pass (empty gallery state, mobile check, console errors)
 
 ---
 
@@ -115,6 +117,26 @@ Export button in Dashboard (state_admin / platform_admin only) generates CSV in-
 ---
 
 ## Historical Log
+
+### 2026-04-11 — Storage live + platform_admin bootstrap
+
+**Firebase Storage initialized and rules deployed:**
+Storage bucket initialized in Firebase Console (test mode → immediately overwritten by `firebase deploy --only storage`). Auth-enforced storage rules are now live. Media uploads will work on the live URL.
+
+**Admin bootstrap script (`scripts/bootstrap-admin.ts`):**
+New script using `firebase-admin` SDK (bypasses Firestore security rules — required because no existing platform_admin can approve the first one). Takes a service account key path as argument. Creates:
+- Firebase Auth user + Firestore user doc with `role: platform_admin`
+- Test State config at `states/ts` with amber branding
+
+Script run against live project. Platform admin now exists:
+- Email: `jason@spencershome.org` / uid: `EoCy0vcpn8RIucC5bsRuOOhn3ak2`
+- Password: `ChangeMe123!` — **must be changed before any demo**
+
+`firebase-admin` added as dev dependency (bootstrap script only — not bundled into the app).
+
+**Service account key:** Downloaded to `~/Downloads/` — not committed. Do not move into the project directory.
+
+---
 
 ### 2026-04-11 — v1 deployment + build fixes
 
