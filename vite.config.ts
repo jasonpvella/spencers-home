@@ -9,4 +9,14 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/firebase')) return 'firebase';
+          if (['react', 'react-dom', 'react-router-dom', 'zustand'].some(p => id.includes(`/node_modules/${p}/`))) return 'vendor';
+        },
+      },
+    },
+  },
 })

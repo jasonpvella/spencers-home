@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { auth } from '@/config/firebase';
+import { getSsoProvider, initiateSsoSignIn } from '@/services/sso';
+import { useAuthStore } from '@/store/authStore';
+import type { SsoProvider } from '@/types';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -19,9 +22,50 @@ type ResetValues = z.infer<typeof resetSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [mode, setMode] = useState<'login' | 'reset'>('login');
   const [authError, setAuthError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  const [stateIdInput, setStateIdInput] = useState('');
+  const [ssoProvider, setSsoProvider] = useState<SsoProvider | null>(null);
+  const [ssoChecking, setSsoChecking] = useState(false);
+  const [ssoError, setSsoError] = useState<string | null>(null);
+  const ssoDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Redirect authenticated users (handles post-SSO redirect as well)
+  useEffect(() => {
+    if (user) navigate('/dashboard', { replace: true });
+  }, [user, navigate]);
+
+  function onStateIdChange(value: string) {
+    setStateIdInput(value);
+    setSsoProvider(null);
+    setSsoError(null);
+    if (ssoDebounce.current) clearTimeout(ssoDebounce.current);
+    if (!value.trim()) return;
+    ssoDebounce.current = setTimeout(async () => {
+      setSsoChecking(true);
+      try {
+        const p = await getSsoProvider(value.trim().toLowerCase());
+        setSsoProvider(p?.enabled ? p : null);
+      } catch {
+        // Non-fatal — SSO just won't show
+      } finally {
+        setSsoChecking(false);
+      }
+    }, 500);
+  }
+
+  async function onSsoSignIn() {
+    if (!ssoProvider) return;
+    setSsoError(null);
+    try {
+      await initiateSsoSignIn(ssoProvider);
+      // Page will redirect to IdP — execution stops here
+    } catch {
+      setSsoError('Could not initiate SSO. Check with your administrator.');
+    }
+  }
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +106,7 @@ export default function LoginPage() {
         </div>
 
         {mode === 'login' ? (
+          <>
           <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -125,6 +170,37 @@ export default function LoginPage() {
               </Link>
             </p>
           </form>
+
+          {/* SSO sign-in */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <p className="text-xs text-gray-400 text-center mb-3">Or sign in with your agency SSO</p>
+            <div>
+              <input
+                type="text"
+                value={stateIdInput}
+                onChange={(e) => onStateIdChange(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="State ID (e.g. ne)"
+                autoComplete="off"
+              />
+            </div>
+            {ssoChecking && (
+              <p className="text-xs text-gray-400 mt-2 text-center">Checking SSO…</p>
+            )}
+            {ssoProvider && (
+              <button
+                type="button"
+                onClick={onSsoSignIn}
+                className="mt-3 w-full border border-brand-600 text-brand-700 hover:bg-brand-50 font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+              >
+                Sign in with {ssoProvider.displayName}
+              </button>
+            )}
+            {ssoError && (
+              <p className="text-xs text-red-600 mt-2 text-center">{ssoError}</p>
+            )}
+          </div>
+          </>
         ) : (
           <div>
             {resetSent ? (

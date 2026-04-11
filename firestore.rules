@@ -39,17 +39,42 @@ service cloud.firestore {
     }
 
     // ── Users ────────────────────────────────────────────────────────────────
-    // Users can read their own record. Only platform_admin can write.
 
     match /users/{userId} {
       allow read: if isAuth() && request.auth.uid == userId;
-      allow create, update: if isPlatformAdmin();
+
+      // Self-registration: user can create their own doc immediately after
+      // Firebase Auth account creation. Role is locked to caseworker
+      // at create time — no self-escalation to admin roles.
+      allow create: if isAuth()
+        && request.auth.uid == userId
+        && request.resource.data.role == 'caseworker'
+        && request.resource.data.stateId is string;
+
+      // Platform admin: full update authority.
+      // State admin: can activate/deactivate and change roles for users in
+      //   their own state, but cannot set or preserve platform_admin role.
+      // Self: user can update their own lastLoginAt only.
+      allow update: if isPlatformAdmin()
+        || (isStateAdmin()
+            && belongsToState(resource.data.stateId)
+            && request.resource.data.role != 'platform_admin')
+        || (isAuth()
+            && request.auth.uid == userId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt']));
+
       allow delete: if false;
+
     }
 
     // ── State-scoped data ────────────────────────────────────────────────────
 
     match /states/{stateId} {
+
+      // State document — stores state config (branding, consent model, PII rules).
+      // State admin can read/write their own state. Platform admin has full access.
+      allow read: if isStateAdmin() && (belongsToState(stateId) || isPlatformAdmin());
+      allow write: if isStateAdmin() && (belongsToState(stateId) || isPlatformAdmin());
 
       // Children
       // Public: anyone can read profiles with status == 'published'
@@ -65,9 +90,16 @@ service cloud.firestore {
           && request.resource.data.stateId == stateId;
 
         allow update: if
-          isCaseworkerOrAbove()
-          && belongsToState(stateId)
-          && request.resource.data.stateId == stateId;
+          // Caseworker+ from matching state can update profile fields
+          (isCaseworkerOrAbove()
+            && belongsToState(stateId)
+            && request.resource.data.stateId == stateId)
+          // Anyone may increment viewCount by exactly 1 (fire-and-forget view tracking)
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount'])
+              && request.resource.data.viewCount == resource.data.viewCount + 1)
+          // Public inquiry submission may increment inquiryCount by exactly 1
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['inquiryCount'])
+              && request.resource.data.inquiryCount == resource.data.inquiryCount + 1);
 
         // No hard deletes — use status: 'archived'
         allow delete: if false;
@@ -81,8 +113,22 @@ service cloud.firestore {
         }
       }
 
+      // Notifications — written by public inquiry flow (no auth required to create)
+      // Only the target user can read or mark as read.
+      // Update is restricted to the read field only — no other fields may change.
+      match /notifications/{notifId} {
+        allow create: if true;
+        allow read: if isAuth() && request.auth.uid == resource.data.userId;
+        allow update: if isAuth()
+          && request.auth.uid == resource.data.userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow delete: if false;
+      }
+
       // Consents
-      // Only caseworker+ from matching state can read/write
+      // Only caseworker+ from matching state can read/write.
+      // Updates are restricted to status and expiresAt — core consent fields
+      // (signedBy, signedAt, formData, auditTrail) are immutable after creation.
       match /consents/{consentId} {
         allow read: if isCaseworkerOrAbove() && belongsToState(stateId);
 
@@ -91,13 +137,23 @@ service cloud.firestore {
           && belongsToState(stateId)
           && request.resource.data.stateId == stateId;
 
-        // Allow marking expired; no field can be removed
         allow update: if
           isCaseworkerOrAbove()
-          && belongsToState(stateId);
+          && belongsToState(stateId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'expiresAt']);
 
         allow delete: if false;
       }
+    }
+
+    // ── SSO providers ────────────────────────────────────────────────────────
+    // Public read: login page fetches this before auth to detect SSO availability.
+    // Only state admin (or platform admin) can write. Stores: enabled, providerType,
+    // providerId, displayName — no secrets.
+
+    match /ssoProviders/{stateId} {
+      allow read: if true;
+      allow write: if isStateAdmin() && (belongsToState(stateId) || isPlatformAdmin());
     }
 
     // ── Audit log ────────────────────────────────────────────────────────────
@@ -108,14 +164,6 @@ service cloud.firestore {
       allow read: if isPlatformAdmin();
       allow create: if isAuth();
       allow update, delete: if false;
-    }
-
-    // ── State configs ─────────────────────────────────────────────────────────
-    // State admin can read their own config. Platform admin can read/write all.
-
-    match /stateConfigs/{stateId} {
-      allow read: if isStateAdmin() && (userStateId() == stateId || isPlatformAdmin());
-      allow write: if isPlatformAdmin();
     }
   }
 }

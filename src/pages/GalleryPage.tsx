@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DEFAULT_STATE_ID } from '@/config/constants';
 import { usePublishedChildren } from '@/hooks/useChildren';
 import ProfileCard from '@/components/gallery/ProfileCard';
@@ -6,6 +7,7 @@ import type { Gender } from '@/types';
 
 type GenderFilter = Gender | 'all';
 type VideoFilter = 'all' | 'video_only';
+type CategoryParam = 'individuals' | 'siblings' | 'boys' | 'girls';
 
 interface Filters {
   minAge: string;
@@ -21,19 +23,33 @@ const DEFAULT_FILTERS: Filters = {
   video: 'all',
 };
 
+const CATEGORY_LABELS: Record<CategoryParam, string> = {
+  individuals: 'Individuals',
+  siblings: 'Siblings',
+  boys: 'Boys',
+  girls: 'Girls',
+};
+
 export default function GalleryPage() {
+  const [searchParams] = useSearchParams();
+  const category = (searchParams.get('category') ?? '') as CategoryParam | '';
   const { children, loading, error } = usePublishedChildren(DEFAULT_STATE_ID);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-
   const filtered = useMemo(() => {
     return children.filter((child) => {
+      // Category pre-filter from landing page
+      if (category === 'individuals' && child.siblingGroupIds && child.siblingGroupIds.length > 0) return false;
+      if (category === 'siblings' && (!child.siblingGroupIds || child.siblingGroupIds.length === 0)) return false;
+      if (category === 'boys' && child.gender !== 'male') return false;
+      if (category === 'girls' && child.gender !== 'female') return false;
+      // Manual filters
       if (filters.minAge !== '' && child.ageAtListing < Number(filters.minAge)) return false;
       if (filters.maxAge !== '' && child.ageAtListing > Number(filters.maxAge)) return false;
       if (filters.gender !== 'all' && child.gender !== filters.gender) return false;
       if (filters.video === 'video_only' && !child.videoUrl) return false;
       return true;
     });
-  }, [children, filters]);
+  }, [children, filters, category]);
 
   const activeFilterCount = [
     filters.minAge !== '',
@@ -47,13 +63,20 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#faf9f7]">
       <header className="bg-white border-b border-gray-200 px-4 py-6 text-center">
-        <h1 className="text-3xl font-semibold text-gray-900">Meet Our Kids</h1>
+        <h1 className="text-3xl font-semibold text-gray-900">
+          {category && CATEGORY_LABELS[category] ? `Meet Our ${CATEGORY_LABELS[category]}` : 'Meet Our Kids'}
+        </h1>
         <p className="text-gray-500 mt-2 max-w-xl mx-auto text-sm">
           Every child here is waiting for a forever family. Watch their videos, learn their
           stories, and reach out to a caseworker if someone catches your heart.
         </p>
+        {category && (
+          <Link to="/gallery" className="mt-2 inline-block text-xs text-amber-600 hover:underline">
+            ← View all children
+          </Link>
+        )}
       </header>
 
       {/* Filters */}

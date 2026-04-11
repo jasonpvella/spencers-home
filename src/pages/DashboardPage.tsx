@@ -3,6 +3,109 @@ import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useAllChildren } from '@/hooks/useChildren';
 import { useExpiringConsents } from '@/hooks/useConsent';
+import type { ChildProfile } from '@/types';
+
+// AFCARS sex codes: 1=Male, 2=Female, 99=Unknown/Other
+function afcarsSex(gender: ChildProfile['gender']): string {
+  if (gender === 'male') return '1';
+  if (gender === 'female') return '2';
+  return '99';
+}
+
+// AFCARS ICWA eligibility codes: 1=Yes, 2=No, 99=Unknown
+function afcarsIcwa(flag: boolean): string {
+  return flag ? '1' : '2';
+}
+
+function exportAFCARS(children: ChildProfile[], stateId: string) {
+  const now = new Date();
+  const mo = String(now.getMonth() + 1).padStart(2, '0');
+  const yr = String(now.getFullYear());
+
+  const active = children.filter((c) => c.status !== 'archived');
+
+  // AFCARS adoption file field names (federal 45 CFR Part 1355).
+  // Fields we cannot populate are exported blank — states must complete
+  // DOB, race/ethnicity, placement dates, and legal basis before submission.
+  const header = [
+    'RPTFIPS',    // State identifier (stateId — map to FIPS before submission)
+    'AFCARSID',   // Unique child record ID
+    'REPDATMO',   // Reporting period month
+    'REPDATYR',   // Reporting period year
+    'SEX',        // 1=Male 2=Female 99=Unknown
+    'ICWAELIG',   // 1=Yes 2=No 99=Unknown
+    'AGE',        // Age at listing
+    'STATUS',     // Platform status (non-AFCARS — for state reference)
+    'CONSENT',    // Consent status (non-AFCARS — for state reference)
+    'LISTED_DATE',// Published date if available (non-AFCARS — for state reference)
+    'VIEWS',      // View count (non-AFCARS)
+    'INQUIRIES',  // Inquiry count (non-AFCARS)
+    // ── Fields states must complete before AFCARS submission ──
+    'DOB',        // Date of birth (not collected — complete before submission)
+    'FCID',       // Local agency ID (not collected — complete before submission)
+    'TERMDT',     // TPR date (not collected — complete before submission)
+    'AMIAKN',     // American Indian/Alaska Native (not collected)
+    'ASIAN',      // Asian (not collected)
+    'BLKAFRAM',   // Black/African American (not collected)
+    'HAWAIIPI',   // Hawaiian/Pacific Islander (not collected)
+    'WHITE',      // White (not collected)
+    'HISORGIN',   // Hispanic origin (not collected)
+  ];
+
+  const rows = active.map((c) => {
+    const publishedAt = c.publishedAt
+      ? (c.publishedAt as unknown as { toDate: () => Date }).toDate().toISOString().slice(0, 10)
+      : '';
+    return [
+      stateId,
+      c.id,
+      mo,
+      yr,
+      afcarsSex(c.gender),
+      afcarsIcwa(c.icwaFlag),
+      String(c.ageAtListing),
+      c.status,
+      c.consentStatus,
+      publishedAt,
+      String(c.viewCount ?? 0),
+      String(c.inquiryCount ?? 0),
+      '', '', '', '', '', '', '', '', '', // unmapped fields
+    ];
+  });
+
+  const csv = [header, ...rows]
+    .map((r) => r.map((v) => `"${v}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `afcars-export-${stateId}-${now.toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportAdoptUSKidsCSV(children: ChildProfile[]) {
+  const published = children.filter((c) => c.status === 'published');
+  const header = ['first_name', 'age', 'gender', 'interests', 'bio'];
+  const rows = published.map((c) => [
+    c.firstName,
+    String(c.ageAtListing),
+    c.gender === 'undisclosed' ? '' : c.gender,
+    c.interests.join('; '),
+    (c.bio ?? '').replace(/"/g, '""'),
+  ]);
+  const csv = [header, ...rows]
+    .map((r) => r.map((v) => `"${v}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `adoptusskids-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function DashboardPage() {
   const user = useCurrentUser();
@@ -34,12 +137,36 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500">{user?.stateId} — {user?.displayName}</p>
         </div>
-        <Link
-          to="/profile/new"
-          className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          New Profile
-        </Link>
+        <div className="flex items-center gap-2">
+          {(user?.role === 'state_admin' || user?.role === 'platform_admin') && (
+            <>
+              <button
+                type="button"
+                disabled={loading || children.filter((c) => c.status !== 'archived').length === 0}
+                onClick={() => exportAFCARS(children, stateId)}
+                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+                title="Export AFCARS-ready CSV (partial — complete DOB, race, and legal fields before federal submission)"
+              >
+                Export AFCARS CSV
+              </button>
+              <button
+                type="button"
+                disabled={loading || counts.published === 0}
+                onClick={() => exportAdoptUSKidsCSV(children)}
+                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+                title={counts.published === 0 ? 'No published profiles to export' : undefined}
+              >
+                Export AdoptUSKids CSV
+              </button>
+            </>
+          )}
+          <Link
+            to="/profile/new"
+            className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            New Profile
+          </Link>
+        </div>
       </div>
 
       {/* Expiring consent alerts */}

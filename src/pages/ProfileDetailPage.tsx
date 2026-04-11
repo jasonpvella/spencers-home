@@ -5,8 +5,9 @@ import MediaUpload from '@/components/profile/MediaUpload';
 import { useToast } from '@/components/shared/Toaster';
 import { EDITABLE_STATUSES } from '@/config/constants';
 import { getConsent } from '@/services/consent';
+import { getInquiries } from '@/services/inquiries';
 import { useState, useEffect } from 'react';
-import type { ProfileStatus, ConsentRecord } from '@/types';
+import type { ProfileStatus, ConsentRecord, Inquiry } from '@/types';
 
 const STATUS_LABEL: Record<ProfileStatus, string> = {
   draft: 'Draft',
@@ -45,6 +46,7 @@ export default function ProfileDetailPage() {
   const { publish, update, saving } = useChildActions(stateId, userId);
   const { toast } = useToast();
   const [consentRecord, setConsentRecord] = useState<ConsentRecord | null>(null);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
   useEffect(() => {
     if (child?.consentId && stateId) {
@@ -55,6 +57,14 @@ export default function ProfileDetailPage() {
       setConsentRecord(null);
     }
   }, [child?.consentId, stateId]);
+
+  useEffect(() => {
+    if (childId && stateId && child && child.inquiryCount > 0) {
+      getInquiries(stateId, childId)
+        .then(setInquiries)
+        .catch(() => undefined);
+    }
+  }, [childId, stateId, child?.inquiryCount]);
 
   async function handlePublish() {
     if (!childId) return;
@@ -311,6 +321,40 @@ export default function ProfileDetailPage() {
           <MediaUpload child={child} userId={userId} onUpdate={reload} />
         </div>
       </div>
+
+      {/* Inquiries */}
+      {child.inquiryCount > 0 && (
+        <div className="mt-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">
+              Inquiries ({child.inquiryCount})
+            </p>
+            {inquiries.length === 0 ? (
+              <p className="text-sm text-gray-400">Loading…</p>
+            ) : (
+              <div className="space-y-4">
+                {inquiries.map((inq) => (
+                  <div key={inq.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-800">{inq.name}</span>
+                      <span className="text-xs text-gray-400">
+                        {(inq.submittedAt as unknown as { toDate: () => Date }).toDate().toLocaleDateString()}
+                      </span>
+                    </div>
+                    <a
+                      href={`mailto:${inq.email}`}
+                      className="text-xs text-brand-600 hover:underline block mb-2"
+                    >
+                      {inq.email}
+                    </a>
+                    <p className="text-sm text-gray-600 leading-relaxed">{inq.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

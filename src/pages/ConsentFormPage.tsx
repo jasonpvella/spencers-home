@@ -16,7 +16,7 @@ const schema = z.object({
   youthAssentObtained: z.boolean(),
   icwaTribalNotified: z.boolean(),
   acknowledged: z.literal(true, {
-    errorMap: () => ({ message: 'You must read and acknowledge the consent statement' }),
+    error: 'You must read and acknowledge the consent statement',
   }),
 });
 
@@ -82,7 +82,7 @@ export default function ConsentFormPage() {
           acknowledged: true,
           signatureDataUrl,
           // TODO: Replace with Nebraska DHHS-approved consent language before production
-          consentLanguageVersion: 'placeholder-v1',
+          consentLanguageVersion: 'ne-draft-v1',
         },
         youthAssentObtained: values.youthAssentObtained,
         icwaTribalNotified: values.icwaTribalNotified,
@@ -126,9 +126,10 @@ export default function ConsentFormPage() {
 
       {/* Legal placeholder notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 text-xs text-amber-800">
-        <strong>Note:</strong> This consent form uses placeholder language. It must be reviewed
-        and replaced with Nebraska DHHS-approved consent language before going live with real
-        children's data.
+        <strong>Draft language — pending Nebraska DHHS review before production use.</strong>{' '}
+        The consent statement below is a draft prepared for internal review. A formal review
+        and written sign-off from Nebraska Department of Health and Human Services is required
+        before this form may be used with real children's data.
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -174,36 +175,57 @@ export default function ConsentFormPage() {
           <h2 className="text-sm font-medium text-gray-700">Consent statement</h2>
           <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 leading-relaxed space-y-3 border border-gray-100">
             <p>
-              I, the undersigned, acting in my authorized capacity as identified above, hereby
-              consent to the listing of {child.firstName} on the Spencer's Home digital
-              recruitment gallery. I confirm that:
+              I, the undersigned, acting in my authorized capacity as a Nebraska Department of
+              Health and Human Services (DHHS) representative or licensed child-placing agency
+              designee, hereby authorize the listing of {child.firstName} on the Spencer's Home
+              digital recruitment platform subject to the terms set forth below.
             </p>
             <ul className="list-disc list-inside space-y-1.5 text-gray-600">
               <li>
-                This child has been legally freed for adoption or is an eligible foster youth
-                whose participation in adoption recruitment is appropriate.
+                <strong>Legal basis.</strong> The child has been adjudicated legally free for
+                adoption pursuant to Neb. Rev. Stat. § 43-104 et seq., or is an eligible youth
+                for whom digital recruitment participation has been authorized under Nebraska's
+                Title IV-E Plan and DHHS Policy Manual Chapter 7.
               </li>
               <li>
-                The information included in this profile does not contain any personally
-                identifiable information prohibited by state or federal law, including last
-                name, school name, or geographic identifiers.
+                <strong>PII compliance.</strong> The profile contains no prohibited personally
+                identifiable information as defined under Neb. Rev. Stat. § 84-712.05 and DHHS
+                data governance policy — specifically, no last name, school name, street
+                address, neighborhood, or geographic identifier that could enable
+                identification.
               </li>
               <li>
-                I have the authority to authorize this listing under applicable state law and
-                agency policy.
+                <strong>Scope of authorization.</strong> This consent authorizes use of first
+                name, age, narrative bio, interests, and any uploaded photo or video for the
+                purpose of family recruitment through digital gallery listing. Media may be
+                displayed to prospective adoptive families. This authorization does not extend
+                to print publication, third-party syndication, or news media without separate
+                written authorization.
               </li>
               <li>
-                This consent is valid for {DEFAULT_CONSENT_EXPIRY_DAYS} days from the date
-                of signing and must be renewed upon expiration.
+                <strong>Duration and renewal.</strong> This consent is valid for{' '}
+                {DEFAULT_CONSENT_EXPIRY_DAYS} days from the date of signing (i.e., the consent
+                record's <code>expiresAt</code> date) and must be renewed prior to expiration
+                to maintain the profile in published status. Expiration does not delete the
+                profile — it moves it to inactive status pending renewal.
               </li>
               <li>
-                I understand this listing may be removed or unpublished at any time by agency
-                staff.
+                <strong>Right to withdraw.</strong> This consent may be withdrawn at any time
+                by contacting the child's assigned caseworker or state administrator.
+                Withdrawal will result in immediate removal from the public gallery. All
+                records of the listing are retained in the audit log per DHHS records
+                retention policy.
               </li>
             </ul>
+            <p>
+              By signing below, I attest that I have reviewed the profile content, confirmed
+              the child's legal eligibility, and verified that no prohibited information is
+              included. I understand this record is maintained in an immutable audit log.
+            </p>
             <p className="text-xs text-gray-400 italic">
-              Placeholder consent language — version placeholder-v1. Replace before
-              production use with Nebraska DHHS-approved text.
+              Draft language v1 — Nebraska DHHS review required before production use. Do not
+              use with real child data until DHHS sign-off is obtained from Kirsten Manert,
+              Nebraska DHHS Recruitment.
             </p>
           </div>
 

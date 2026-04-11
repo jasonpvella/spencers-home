@@ -132,7 +132,43 @@ export interface User {
   lastLoginAt: Timestamp;
 }
 
+// ─── Inquiry ───────────────────────────────────────────────────────────────────
+
+export interface Inquiry {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  inquirerState: string;
+  message: string;
+  submittedAt: Timestamp;
+}
+
+// ─── Notification ──────────────────────────────────────────────────────────────
+
+export interface Notification {
+  id: string;
+  userId: string;
+  stateId: string;
+  childId: string;
+  childFirstName: string;
+  inquirerName: string;
+  read: boolean;
+  createdAt: Timestamp;
+}
+
 // ─── Audit Log ─────────────────────────────────────────────────────────────────
+
+export type SsoProviderType = 'saml' | 'oidc';
+
+export interface SsoProvider {
+  stateId: string;
+  providerType: SsoProviderType;
+  providerId: string;
+  displayName: string;
+  enabled: boolean;
+  updatedAt?: Timestamp;
+}
 
 export type AuditEventType =
   | 'profile_status_change'
@@ -141,15 +177,17 @@ export type AuditEventType =
   | 'media_upload'
   | 'media_delete'
   | 'user_role_change'
+  | 'user_sso_login'
   | 'profile_view'
-  | 'inquiry_submitted';
+  | 'inquiry_submitted'
+  | 'state_config_updated';
 
 export interface AuditLog {
   id: string;
   stateId: string;
   eventType: AuditEventType;
   targetId: string;
-  targetType: 'child' | 'consent' | 'user' | 'media';
+  targetType: 'child' | 'consent' | 'user' | 'media' | 'state';
   performedBy: string;
   performedAt: Timestamp;
   details: Record<string, unknown>;

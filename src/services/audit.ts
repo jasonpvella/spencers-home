@@ -6,7 +6,7 @@ export async function writeAuditLog(params: {
   stateId: string;
   eventType: AuditEventType;
   targetId: string;
-  targetType: 'child' | 'consent' | 'user' | 'media';
+  targetType: 'child' | 'consent' | 'user' | 'media' | 'state';
   performedBy: string;
   details: Record<string, unknown>;
 }): Promise<void> {

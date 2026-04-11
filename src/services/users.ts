@@ -5,7 +5,6 @@ import {
   updateDoc,
   query,
   where,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { writeAuditLog } from './audit';
@@ -23,10 +22,7 @@ export async function setUserActive(
   performedBy: string,
   stateId: string
 ): Promise<void> {
-  await updateDoc(doc(db, 'users', userId), {
-    active,
-    lastLoginAt: serverTimestamp(),
-  });
+  await updateDoc(doc(db, 'users', userId), { active });
   await writeAuditLog({
     stateId,
     eventType: 'user_role_change',

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import ReactPlayer from 'react-player';
 import { recordProfileView } from '@/services/children';
-import InquiryModal from './InquiryModal';
 import type { ChildProfile } from '@/types';
 
 // react-player v3 ships narrowed types that omit `url` from the public props interface.
@@ -10,10 +10,7 @@ const Player = ReactPlayer as React.ComponentType<{
   url?: string;
   width?: string;
   height?: string;
-  playing?: boolean;
   controls?: boolean;
-  onPlay?: () => void;
-  onPause?: () => void;
   light?: string | boolean;
 }>;
 
@@ -23,7 +20,6 @@ interface Props {
 }
 
 export default function ProfileCard({ child, stateId }: Props) {
-  const [playing, setPlaying] = useState(false);
   const hasVideo = Boolean(child.videoUrl);
   const hasPhoto = child.photoUrls.length > 0;
   const viewRecorded = useRef(false);
@@ -31,7 +27,6 @@ export default function ProfileCard({ child, stateId }: Props) {
   useEffect(() => {
     if (viewRecorded.current) return;
     viewRecorded.current = true;
-    // Fire-and-forget — view tracking failure must never break the gallery
     recordProfileView(stateId, child.id).catch(() => undefined);
   }, [stateId, child.id]);
 
@@ -44,16 +39,15 @@ export default function ProfileCard({ child, stateId }: Props) {
             url={child.videoUrl}
             width="100%"
             height="100%"
-            playing={playing}
             controls
-            onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
             light={hasPhoto ? child.photoUrls[0] : true}
           />
         ) : hasPhoto ? (
           <img
             src={child.photoUrls[0]}
             alt={`${child.firstName}'s photo`}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
         ) : (
@@ -87,11 +81,12 @@ export default function ProfileCard({ child, stateId }: Props) {
           </div>
         )}
 
-        <InquiryModal
-          childFirstName={child.firstName}
-          stateId={stateId}
-          childId={child.id}
-        />
+        <Link
+          to={`/c/${stateId}/${child.id}`}
+          className="mt-3 w-full text-center text-sm bg-brand-600 hover:bg-brand-700 text-white font-medium py-2 rounded-xl transition-colors"
+        >
+          Learn more about {child.firstName}
+        </Link>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { Navigate } from 'react-router-dom';
 import { auth } from '@/config/firebase';

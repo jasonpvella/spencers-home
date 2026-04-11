@@ -12,6 +12,15 @@ function mediaPath(stateId: string, childId: string, fileName: string): string {
   return `states/${stateId}/children/${childId}/${fileName}`;
 }
 
+export async function uploadStateLogo(stateId: string, file: File): Promise<string> {
+  const fileName = `logo_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const storageRef = ref(storage, `states/${stateId}/branding/${fileName}`);
+  await new Promise<void>((resolve, reject) => {
+    uploadBytesResumable(storageRef, file).on('state_changed', null, reject, resolve);
+  });
+  return getDownloadURL(storageRef);
+}
+
 export interface UploadProgress {
   bytesTransferred: number;
   totalBytes: number;

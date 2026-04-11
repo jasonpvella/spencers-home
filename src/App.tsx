@@ -1,20 +1,36 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthListener } from '@/hooks/useAuth';
 import RequireAuth from '@/components/shared/RequireAuth';
 import AppShell from '@/components/shared/AppShell';
-import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
-import GalleryPage from '@/pages/GalleryPage';
-import DashboardPage from '@/pages/DashboardPage';
-import ProfileFormPage from '@/pages/ProfileFormPage';
-import ProfileDetailPage from '@/pages/ProfileDetailPage';
-import ConsentFormPage from '@/pages/ConsentFormPage';
-import AdminUsersPage from '@/pages/AdminUsersPage';
+import type { UserRole } from '@/types';
 import type { ReactNode } from 'react';
+
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
+const GalleryPage = lazy(() => import('@/pages/GalleryPage'));
+const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const ProfileFormPage = lazy(() => import('@/pages/ProfileFormPage'));
+const ProfileDetailPage = lazy(() => import('@/pages/ProfileDetailPage'));
+const ConsentFormPage = lazy(() => import('@/pages/ConsentFormPage'));
+const AdminUsersPage = lazy(() => import('@/pages/AdminUsersPage'));
+const StateConfigPage = lazy(() => import('@/pages/StateConfigPage'));
+
+const CASEWORKER_ROLES: UserRole[] = ['caseworker', 'supervisor', 'agency_admin', 'state_admin', 'platform_admin'];
+
+function PageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <span className="text-sm text-gray-400">Loading…</span>
+    </div>
+  );
+}
 
 function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <RequireAuth>
+    <RequireAuth allowedRoles={CASEWORKER_ROLES}>
       <AppShell>{children}</AppShell>
     </RequireAuth>
   );
@@ -24,66 +40,80 @@ function AppRoutes() {
   useAuthListener();
 
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/" element={<GalleryPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        {/* Public */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/c/:stateId/:childId" element={<PublicProfilePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      {/* Caseworker — auth required */}
-      <Route
-        path="/dashboard"
-        element={
-          <AuthShell>
-            <DashboardPage />
-          </AuthShell>
-        }
-      />
-      <Route
-        path="/profile/new"
-        element={
-          <AuthShell>
-            <ProfileFormPage mode="create" />
-          </AuthShell>
-        }
-      />
-      <Route
-        path="/profile/:id"
-        element={
-          <AuthShell>
-            <ProfileDetailPage />
-          </AuthShell>
-        }
-      />
-      <Route
-        path="/profile/:id/edit"
-        element={
-          <AuthShell>
-            <ProfileFormPage mode="edit" />
-          </AuthShell>
-        }
-      />
-      <Route
-        path="/profile/:id/consent"
-        element={
-          <AuthShell>
-            <ConsentFormPage />
-          </AuthShell>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <RequireAuth allowedRoles={['state_admin', 'agency_admin', 'platform_admin']}>
-            <AppShell>
-              <AdminUsersPage />
-            </AppShell>
-          </RequireAuth>
-        }
-      />
+        {/* Caseworker — auth required */}
+        <Route
+          path="/dashboard"
+          element={
+            <AuthShell>
+              <DashboardPage />
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/profile/new"
+          element={
+            <AuthShell>
+              <ProfileFormPage mode="create" />
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/profile/:id"
+          element={
+            <AuthShell>
+              <ProfileDetailPage />
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/profile/:id/edit"
+          element={
+            <AuthShell>
+              <ProfileFormPage mode="edit" />
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/profile/:id/consent"
+          element={
+            <AuthShell>
+              <ConsentFormPage />
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAuth allowedRoles={['state_admin', 'agency_admin', 'platform_admin']}>
+              <AppShell>
+                <AdminUsersPage />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/state-config"
+          element={
+            <RequireAuth allowedRoles={['state_admin', 'platform_admin']}>
+              <AppShell>
+                <StateConfigPage />
+              </AppShell>
+            </RequireAuth>
+          }
+        />
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
