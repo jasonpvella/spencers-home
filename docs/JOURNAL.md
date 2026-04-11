@@ -47,7 +47,7 @@
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Change platform admin password on the live site (currently `ChangeMe123!`)
+1. Diagnose platform_admin login issue on live site (auth succeeds via REST, suspected post-login crash — missing `stateId` on user doc or browser cache). Try incognito first; if white screen after login, add `stateId: 'ts'` to the user doc via bootstrap script or Firebase Console.
 2. Walk the full core loop on the live URL: create profile → consent → publish → browse gallery → submit inquiry → see notification
 3. Task 3: strip SSO from login page and state config UI
 4. Task 4: sponsor logo uploads in state config + landing page
@@ -117,6 +117,16 @@ Export button in Dashboard (state_admin / platform_admin only) generates CSV in-
 ---
 
 ## Historical Log
+
+### 2026-04-11 — platform_admin login debugging
+
+**Login credentials confirmed valid via Firebase REST API** — `signInWithPassword` returns success with correct uid. The issue is post-login, not auth.
+
+**Suspected cause:** `platform_admin` user doc was written without a `stateId` field. `DashboardPage` passes `user?.stateId ?? ''` to `useAllChildren`, which queries `states/{stateId}/children` — empty string returns nothing but may not crash. More likely crash point: Firestore security rules call `userDoc().stateId` inside `userStateId()` helper — if that field is missing, `get()` on the user doc may fail or return undefined, causing a rules evaluation error and blocking the read of state data.
+
+**Next step:** Try incognito window. If white screen after login, add `stateId: 'ts'` to `users/{uid}` doc in Firebase Console or update bootstrap script.
+
+---
 
 ### 2026-04-11 — Storage live + platform_admin bootstrap
 
