@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useCurrentUser } from '@/hooks/useAuth';
@@ -78,11 +78,13 @@ export default function AppShell({ children }: Props) {
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Agency logo" className="h-7 w-auto max-w-[140px] object-contain" />
-            ) : (
-              <span className="font-semibold text-gray-900 text-sm">Spencer's Home</span>
-            )}
+            <Link to="/">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Agency logo" className="h-7 w-auto max-w-[140px] object-contain" />
+              ) : (
+                <span className="font-semibold text-gray-900 text-sm hover:text-brand-700 transition-colors">Spencer's Home</span>
+              )}
+            </Link>
             <div className="flex items-center gap-1">
               <NavLink
                 to="/dashboard"

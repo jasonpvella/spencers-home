@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 // ─── Category card data ────────────────────────────────────────────────────────
 
@@ -65,6 +67,11 @@ const SPONSOR_SLOTS = 6;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const heroOpacity = useTransform(scrollY, [0, 200], [1, 0]);
+  const heroScale = useTransform(scrollY, [0, 200], [1, 0.95]);
+
   return (
     <div className="min-h-screen bg-[#faf9f7]">
 
@@ -89,7 +96,7 @@ export default function LandingPage() {
         Use a photo where a child is sharp in the foreground and family figures
         are visible but softened in the background — the CSS blur handles the rest.
       */}
-      <section className="relative h-[560px] overflow-hidden">
+      <section ref={heroRef} className="relative z-10 h-[460px] overflow-hidden">
         {/* Blurred background layer */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -103,14 +110,17 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-amber-950/60" />
 
         {/* Content */}
-        <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6">
+        <motion.div
+          style={{ opacity: heroOpacity, scale: heroScale }}
+          className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6"
+        >
           {/* Foreground portrait — same image, sharp, framed */}
           <div className="mb-7 relative">
-            <div className="w-44 h-52 rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
+            <div className="w-80 h-[12.5rem] rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
               <img
                 src="/hero.png"
                 alt="A child waiting for a forever family"
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover object-right"
               />
             </div>
             {/* Warm glow ring */}
@@ -120,32 +130,30 @@ export default function LandingPage() {
           <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight max-w-2xl drop-shadow-lg">
             Every Child Deserves a Forever Family
           </h1>
-          <p className="mt-4 text-white/80 text-base sm:text-lg max-w-xl leading-relaxed">
-            Meet the children in your state who are legally free and waiting.
-            Their stories are here. Their families might be yours.
-          </p>
-          <Link
-            to="/gallery"
-            className="mt-8 bg-amber-500 hover:bg-amber-600 text-white font-semibold px-8 py-3.5 rounded-full shadow-lg transition-colors text-base"
-          >
-            Meet Our Kids
-          </Link>
-        </div>
+          <div className="relative z-30 mt-6">
+            <Link
+              to="/gallery"
+              className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-8 py-3.5 rounded-full shadow-lg transition-colors text-base"
+            >
+              Meet Our Kids
+            </Link>
+          </div>
+        </motion.div>
       </section>
 
       {/* ── Category cards ──────────────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 -mt-12 relative z-10">
+      <section className="max-w-5xl mx-auto px-4 mt-8 relative z-20">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {CATEGORIES.map((cat) => (
             <Link
               key={cat.label}
               to={cat.href}
-              className="bg-white rounded-2xl p-5 flex flex-col items-center text-center shadow-md hover:shadow-lg border border-gray-100 transition-all hover:-translate-y-0.5 group"
+              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-lg hover:shadow-xl border border-gray-200 transition-all hover:-translate-y-1 group"
             >
               <div className="text-amber-500 mb-3 group-hover:scale-110 transition-transform">
                 {cat.icon}
               </div>
-              <h3 className="font-bold text-gray-900 text-base mb-1">{cat.label}</h3>
+              <h3 className="font-bold text-gray-900 text-2xl mb-1">{cat.label}</h3>
               <p className="text-xs text-gray-500 leading-snug">{cat.description}</p>
             </Link>
           ))}
@@ -164,49 +172,43 @@ export default function LandingPage() {
             </h2>
             <div className="space-y-4 text-gray-600 text-[15px] leading-relaxed">
               <p>
-                Spencer's Home began with a simple truth — that the Heart Gallery model, as powerful
-                as it once was, left too many children unseen. Static photos, outdated binders, and
-                systems that hadn't changed in decades. We knew we could do better.
+                Thousands of children are legally free to be adopted — and completely invisible.
+                Buried in outdated systems. Represented by a photo that's three years old, if
+                they're represented at all.
               </p>
               <p>
-                We built Spencer's Home as a video-first, dignity-centered platform that gives every
-                legally free child a real presence — not a case file. Families can watch a child
-                laugh, talk about their favorite things, and imagine what it would be like to bring
-                them home.
+                Spencer's Home exists to change that.
               </p>
               <p>
-                Through our partnership with{' '}
-                <strong className="text-gray-900">Arkansas Project Zero</strong> — the organization
-                that helped reduce their state's waiting children from 440 to 146 through the power
-                of professional video — we are expanding that model nationally. Together, we're
-                working with state child welfare agencies across the country to replace outdated
-                systems with something worthy of every child who waits.
+                We give waiting children something the system never has — a real presence. Families
+                hear a child's laugh, learn what they dream about, and begin to picture them at the
+                dinner table. Because the right family is always out there. They just don't know the
+                child exists yet.
               </p>
               <p>
                 This platform is named for Spencer — a child who lived in our home, and who reminded
-                us that the right family is out there for every kid. It just takes the right tools
-                to make the connection.
+                us that every kid deserves to be found.
               </p>
             </div>
           </div>
 
           <div className="sm:w-56 flex-shrink-0 space-y-4">
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-center">
-              <p className="text-3xl font-bold text-amber-600">440 → 146</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-md">
+              <p className="text-3xl font-bold text-amber-600">70,000+</p>
               <p className="text-xs text-gray-500 mt-1 leading-snug">
-                Waiting children reduced in Arkansas through video-first profiles
+                Children currently waiting for a forever family in the U.S.
               </p>
             </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-center">
-              <p className="text-3xl font-bold text-amber-600">50+</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-md">
+              <p className="text-3xl font-bold text-amber-600">3 years</p>
               <p className="text-xs text-gray-500 mt-1 leading-snug">
-                State child welfare agencies targeted for partnership
+                The average time a child spends waiting for a home
               </p>
             </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 text-center">
-              <p className="text-3xl font-bold text-amber-600">100%</p>
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-md">
+              <p className="text-3xl font-bold text-amber-600">1 mission</p>
               <p className="text-xs text-gray-500 mt-1 leading-snug">
-                Focused on children's dignity — no matching algorithms, ever
+                To ensure every child is seen, known, and loved
               </p>
             </div>
           </div>

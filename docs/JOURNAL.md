@@ -52,6 +52,7 @@
 3. Task 3: strip SSO from login page and state config UI
 4. Task 4: sponsor logo uploads in state config + landing page
 5. Task 5: polish pass (empty gallery state, mobile check, console errors)
+6. Continue landing page polish — hero layout, card spacing, mobile review
 
 ---
 
@@ -117,6 +118,28 @@ Export button in Dashboard (state_admin / platform_admin only) generates CSV in-
 ---
 
 ## Historical Log
+
+### 2026-04-11 — Landing page + gallery UI polish
+
+**Dependencies added:** `framer-motion` v12 installed.
+
+**GalleryPage masonry layout:**
+Replaced the CSS `grid` with native CSS `columns-1 sm:columns-2 lg:columns-4`. Each card wrapped in `break-inside-avoid` div with `mb-6` spacing. No external library — achieves the same staggered masonry look as `react-masonry-css` with zero dependency overhead.
+
+**LandingPage — hero scroll animation:**
+Hero content (`motion.div`) now uses `useScroll` + `useTransform` to fade opacity 1→0 and scale 1→0.95 over the first 200px of scroll. Blurred background layer stays fixed, creating a parallax-like depth effect as content fades.
+
+**LandingPage — copy updates:**
+- "Our Story" body copy replaced with new mission-focused text (provided by Jason): opens with the invisibility problem, Spencer's Home as the fix, and closes with the Spencer origin story.
+- 3 stat cards updated: `440→146 / 50+ / 100%` replaced with `70,000+ children / 3 years / 1 mission`.
+
+**LandingPage — visual polish:**
+- Hero photo frame: widened to `w-80`, shortened to `h-[12.5rem]`, `object-right` to show background people.
+- Stat cards: switched from washed `bg-amber-50` to `bg-white` with `shadow-md` — more presence.
+- Category card labels ("Individuals" etc.): `text-base` → `text-2xl`.
+- Category cards: stronger shadow, border, padding, and hover lift.
+- Hero z-index layering fixed: hero `z-10`, cards `z-20`, button wrapper `z-30`.
+- Removed subheadline paragraph from hero — cleaner, less noise.
 
 ### 2026-04-11 — platform_admin login debugging
 

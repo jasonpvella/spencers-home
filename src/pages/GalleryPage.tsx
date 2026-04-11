@@ -65,6 +65,9 @@ export default function GalleryPage() {
   return (
     <div className="min-h-screen bg-[#faf9f7]">
       <header className="bg-white border-b border-gray-200 px-4 py-6 text-center">
+        <Link to="/" className="inline-block text-xs text-amber-600 hover:underline mb-3">
+          ← Back to home
+        </Link>
         <h1 className="text-3xl font-semibold text-gray-900">
           {category && CATEGORY_LABELS[category] ? `Meet Our ${CATEGORY_LABELS[category]}` : 'Meet Our Kids'}
         </h1>
@@ -174,9 +177,11 @@ export default function GalleryPage() {
             </button>
           </p>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="columns-1 sm:columns-2 lg:columns-4 gap-6">
           {filtered.map((child) => (
-            <ProfileCard key={child.id} child={child} stateId={DEFAULT_STATE_ID} />
+            <div key={child.id} className="break-inside-avoid mb-6">
+              <ProfileCard child={child} stateId={DEFAULT_STATE_ID} />
+            </div>
           ))}
         </div>
       </main>
