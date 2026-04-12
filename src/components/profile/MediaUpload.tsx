@@ -13,7 +13,6 @@ interface Props {
 
 interface UploadState {
   fileName: string;
-  percent: number;
   error: string | null;
 }
 
@@ -31,14 +30,13 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
     async (accepted: File[]) => {
       const file = accepted[0];
       if (!file) return;
-      setImageUpload({ fileName: file.name, percent: 0, error: null });
+      setImageUpload({ fileName: file.name, error: null });
       try {
         const url = await uploadMedia({
           stateId: child.stateId,
           childId: child.id,
           file,
           uploadedBy: userId,
-          onProgress: ({ percent }) => setImageUpload((s) => s && { ...s, percent }),
         });
         await updateChild(
           child.stateId,
@@ -62,14 +60,13 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
     async (accepted: File[]) => {
       const file = accepted[0];
       if (!file) return;
-      setVideoUpload({ fileName: file.name, percent: 0, error: null });
+      setVideoUpload({ fileName: file.name, error: null });
       try {
         const url = await uploadMedia({
           stateId: child.stateId,
           childId: child.id,
           file,
           uploadedBy: userId,
-          onProgress: ({ percent }) => setVideoUpload((s) => s && { ...s, percent }),
         });
         await updateChild(
           child.stateId,
@@ -138,20 +135,12 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
         >
           <input {...getImageInputProps()} />
           {imageUpload ? (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-xs text-gray-500 truncate">{imageUpload.fileName}</p>
               {imageUpload.error ? (
                 <p className="text-xs text-red-500">{imageUpload.error}</p>
               ) : (
-                <>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className="bg-brand-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${imageUpload.percent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400">{Math.round(imageUpload.percent)}%</p>
-                </>
+                <p className="text-xs text-gray-400">Uploading…</p>
               )}
             </div>
           ) : (
@@ -185,20 +174,12 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
         >
           <input {...getVideoInputProps()} />
           {videoUpload ? (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-xs text-gray-500 truncate">{videoUpload.fileName}</p>
               {videoUpload.error ? (
                 <p className="text-xs text-red-500">{videoUpload.error}</p>
               ) : (
-                <>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                      className="bg-brand-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${videoUpload.percent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400">{Math.round(videoUpload.percent)}%</p>
-                </>
+                <p className="text-xs text-gray-400">Uploading…</p>
               )}
             </div>
           ) : (

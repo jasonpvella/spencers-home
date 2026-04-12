@@ -117,7 +117,8 @@ export default function ProfileDetailPage() {
   }
 
   const canEdit = (EDITABLE_STATUSES as readonly string[]).includes(child.status);
-  const canPublish = child.consentStatus === 'active' && child.status !== 'published';
+  const isSupervisorOrAbove = ['supervisor', 'agency_admin', 'state_admin', 'platform_admin'].includes(user?.role ?? '');
+  const canPublish = isSupervisorOrAbove && child.consentStatus === 'active' && child.status !== 'published';
   const canAddConsent = child.consentStatus !== 'active' && child.status !== 'published' && child.status !== 'archived';
   const canSubmitForReview = child.status === 'draft';
   const canArchive = child.status !== 'archived';

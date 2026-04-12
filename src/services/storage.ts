@@ -1,6 +1,6 @@
 import {
   ref,
-  uploadBytesResumable,
+  uploadBytes,
   getDownloadURL,
   deleteObject,
 } from 'firebase/storage';
@@ -15,16 +15,8 @@ function mediaPath(stateId: string, childId: string, fileName: string): string {
 export async function uploadStateLogo(stateId: string, file: File): Promise<string> {
   const fileName = `logo_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
   const storageRef = ref(storage, `states/${stateId}/branding/${fileName}`);
-  await new Promise<void>((resolve, reject) => {
-    uploadBytesResumable(storageRef, file).on('state_changed', null, reject, resolve);
-  });
+  await uploadBytes(storageRef, file);
   return getDownloadURL(storageRef);
-}
-
-export interface UploadProgress {
-  bytesTransferred: number;
-  totalBytes: number;
-  percent: number;
 }
 
 export async function uploadMedia(params: {
@@ -32,29 +24,14 @@ export async function uploadMedia(params: {
   childId: string;
   file: File;
   uploadedBy: string;
-  onProgress?: (progress: UploadProgress) => void;
 }): Promise<string> {
-  const { stateId, childId, file, uploadedBy, onProgress } = params;
+  const { stateId, childId, file, uploadedBy } = params;
   const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
   const storageRef = ref(storage, mediaPath(stateId, childId, fileName));
 
-  await new Promise<void>((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file);
-    task.on(
-      'state_changed',
-      (snapshot) => {
-        if (onProgress) {
-          onProgress({
-            bytesTransferred: snapshot.bytesTransferred,
-            totalBytes: snapshot.totalBytes,
-            percent: (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
-          });
-        }
-      },
-      reject,
-      resolve
-    );
-  });
+  if (file.size === 0) throw new Error(`File "${file.name}" appears to be empty (0 bytes). Please try selecting it again.`);
+
+  await uploadBytes(storageRef, file);
 
   // getDownloadURL returns a token-based URL (not a public URL)
   const signedUrl = await getDownloadURL(storageRef);

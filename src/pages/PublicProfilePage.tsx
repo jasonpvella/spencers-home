@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReCAPTCHA from 'react-google-recaptcha';
-import ReactPlayer from 'react-player';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,14 +8,6 @@ import { useChild } from '@/hooks/useChildren';
 import { submitInquiry } from '@/services/inquiries';
 import { recordProfileView } from '@/services/children';
 
-// react-player v3 type workaround (same as ProfileCard)
-const Player = ReactPlayer as React.ComponentType<{
-  url?: string;
-  width?: string;
-  height?: string;
-  controls?: boolean;
-  light?: string | boolean;
-}>;
 
 const US_STATES = [
   'Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut',
@@ -119,12 +110,11 @@ export default function PublicProfilePage() {
         {/* Media */}
         <div className="rounded-2xl overflow-hidden bg-gray-100 aspect-video">
           {hasVideo ? (
-            <Player
-              url={child.videoUrl}
-              width="100%"
-              height="100%"
+            <video
+              src={child.videoUrl}
+              poster={hasPhoto ? child.photoUrls[0] : undefined}
               controls
-              light={hasPhoto ? child.photoUrls[0] : true}
+              className="w-full h-full object-cover"
             />
           ) : hasPhoto ? (
             <img

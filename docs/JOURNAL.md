@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Core loop is unblocked. Profile create → detail page → media upload → consent → publish flow is working on the live URL. Next: walk the full loop end-to-end (consent + publish + gallery browse + inquiry).
+**Current Focus:** End-to-end loop is working. Photo displays in gallery and public profile page. Video plays via native browser element. Next: walk full loop (consent → publish → browse gallery → submit inquiry → caseworker notification), then strip SSO from UI, sponsor logos, mobile/polish pass.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -47,7 +47,7 @@
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Continue core loop: add consent → publish → browse gallery → submit inquiry → see caseworker notification
+1. Walk full core loop: consent → publish → browse gallery → submit inquiry → caseworker notification
 2. Strip SSO from login page and state config UI
 3. Sponsor logo uploads in state config + landing page
 4. Polish pass (empty gallery state, mobile check, console errors)
@@ -166,6 +166,32 @@ Hero content (`motion.div`) now uses `useScroll` + `useTransform` to fade opacit
 **Next step:** Try incognito window. If white screen after login, add `stateId: 'ts'` to `users/{uid}` doc in Firebase Console or update bootstrap script.
 
 ---
+
+### 2026-04-12 — Role enforcement, gallery wired to test state, media upload fixed
+
+**Users tab "failed to load" fixed:**
+Firestore rule on `/users/{userId}` only allowed `request.auth.uid == userId` (self-read). Collection queries from admin pages hit every doc in the result set, all of which fail that check. Added `|| isPlatformAdmin()` and `|| (isStateAdmin() && resource.data.stateId == userStateId())` to the read rule. Deployed.
+
+**Test supervisor account created:**
+`supervisor@spencershome.org` / `TestSuper123!` — role: supervisor, stateId: ts. Created via `scripts/create-test-supervisor.ts`.
+
+**Publish locked to supervisor+ only:**
+`canPublish` in `ProfileDetailPage` now checks `user.role in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']`. Same check added to Firestore rules: a `status` transition to `published` requires supervisor+ role server-side. Caseworkers can create and edit profiles but cannot publish.
+
+**Gallery was showing empty (wrong stateId):**
+`VITE_DEFAULT_STATE_ID` was set to `NE` but all test data is under stateId `ts`. Changed to `ts` in `.env.local`. Gallery and public profile page now query Test State correctly.
+
+**Media uploads writing 0 bytes:**
+`uploadBytesResumable` was consistently producing 0-byte objects in Firebase Storage despite returning a token URL and firing the `complete` callback. Switched to `uploadBytes` (simple single-request upload). Added a guard that throws if `file.size === 0` before attempting the upload. Root cause was confirmed via `curl` — stored content length was 0 on every file.
+
+**Storage CORS configured:**
+Firebase Storage bucket had no CORS policy, blocking browser `GET` requests from unauthenticated gallery pages. Set via Admin SDK: origin `*`, methods `GET HEAD POST PUT DELETE`, required headers for Firebase upload protocol.
+
+**Storage rules opened for public read:**
+Previously required `request.auth != null` for reads. Gallery and public profile pages are unauthenticated, so all `<img>` and `<video>` loads were blocked. Changed to `allow read: if true`. Write/delete remain auth-gated. Paths are non-guessable (Firestore-generated child ID + timestamp filename).
+
+**ReactPlayer replaced with native `<video>`:**
+ReactPlayer v3's `Preview` component (`light` prop) silently fails to display the thumbnail for non-YouTube/Vimeo URLs — it tries an oEmbed fetch which returns nothing for Firebase Storage URLs, and the `useEffect` dependency array bug means the fallback image is never set. Replaced with `<video src poster controls>` in both `ProfileCard` and `PublicProfilePage`. Simpler, no dependency, works correctly with direct Firebase Storage URLs.
 
 ### 2026-04-11 — Storage live + platform_admin bootstrap
 

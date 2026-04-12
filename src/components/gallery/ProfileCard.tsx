@@ -1,18 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import ReactPlayer from 'react-player';
 import { recordProfileView } from '@/services/children';
 import type { ChildProfile } from '@/types';
-
-// react-player v3 ships narrowed types that omit `url` from the public props interface.
-// This alias restores the props we actually need without touching the rest of the codebase.
-const Player = ReactPlayer as React.ComponentType<{
-  url?: string;
-  width?: string;
-  height?: string;
-  controls?: boolean;
-  light?: string | boolean;
-}>;
 
 interface Props {
   child: ChildProfile;
@@ -35,12 +24,11 @@ export default function ProfileCard({ child, stateId }: Props) {
       {/* Media */}
       <div className="aspect-video bg-gray-100 relative">
         {hasVideo ? (
-          <Player
-            url={child.videoUrl}
-            width="100%"
-            height="100%"
+          <video
+            src={child.videoUrl}
+            poster={hasPhoto ? child.photoUrls[0] : undefined}
             controls
-            light={hasPhoto ? child.photoUrls[0] : true}
+            className="w-full h-full object-cover"
           />
         ) : hasPhoto ? (
           <img

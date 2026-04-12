@@ -41,7 +41,11 @@ service cloud.firestore {
     // ── Users ────────────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      allow read: if isAuth() && request.auth.uid == userId;
+      allow read: if isAuth() && (
+        request.auth.uid == userId
+        || isPlatformAdmin()
+        || (isStateAdmin() && resource.data.stateId == userStateId())
+      );
 
       // Self-registration: user can create their own doc immediately after
       // Firebase Auth account creation. Role is locked to caseworker
@@ -90,10 +94,14 @@ service cloud.firestore {
           && request.resource.data.stateId == stateId;
 
         allow update: if
-          // Caseworker+ from matching state can update profile fields
+          // Caseworker+ from matching state can update profile fields.
+          // Only supervisor+ can transition status to 'published'.
           (isCaseworkerOrAbove()
             && belongsToState(stateId)
-            && request.resource.data.stateId == stateId)
+            && request.resource.data.stateId == stateId
+            && (request.resource.data.status != 'published'
+                || resource.data.status == 'published'
+                || userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']))
           // Anyone may increment viewCount by exactly 1 (fire-and-forget view tracking)
           || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount'])
               && request.resource.data.viewCount == resource.data.viewCount + 1)
