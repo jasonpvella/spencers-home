@@ -9,6 +9,7 @@ import { useChild, useChildActions } from '@/hooks/useChildren';
 import { INTERESTS_LIST, GENDER_OPTIONS } from '@/config/constants';
 import { checkForPii } from '@/utils/pii';
 import { useToast } from '@/components/shared/Toaster';
+import MediaUpload from '@/components/profile/MediaUpload';
 import type { Gender } from '@/types';
 
 const schema = z.object({
@@ -34,7 +35,7 @@ export default function ProfileFormPage({ mode }: Props) {
   const stateId = user?.stateId ?? '';
   const userId = user?.id ?? '';
 
-  const { child, loading: loadingChild } = useChild(
+  const { child, loading: loadingChild, reload } = useChild(
     mode === 'edit' ? stateId : '',
     mode === 'edit' ? (childId ?? '') : ''
   );
@@ -81,6 +82,10 @@ export default function ProfileFormPage({ mode }: Props) {
   }, [child, mode, reset]);
 
   async function onSubmit(values: FormValues) {
+    if (!stateId) {
+      toast('Your account is missing a state assignment. Contact a platform admin.', 'error');
+      return;
+    }
     const payload = {
       firstName: values.firstName,
       ageAtListing: values.ageAtListing,
@@ -88,12 +93,12 @@ export default function ProfileFormPage({ mode }: Props) {
       bio: values.bio ?? '',
       interests: values.interests,
       icwaFlag: values.icwaFlag,
-      icwaNotes: values.icwaNotes,
+      icwaNotes: values.icwaNotes ?? '',
       photoUrls: mode === 'edit' ? (child?.photoUrls ?? []) : [],
-      videoUrl: mode === 'edit' ? child?.videoUrl : undefined,
+      ...(mode === 'edit' && child?.videoUrl ? { videoUrl: child.videoUrl } : {}),
       status: mode === 'edit' ? (child?.status ?? 'draft') : ('draft' as const),
       consentStatus: mode === 'edit' ? (child?.consentStatus ?? 'not_obtained') : ('not_obtained' as const),
-      consentId: mode === 'edit' ? child?.consentId : undefined,
+      ...(mode === 'edit' && child?.consentId ? { consentId: child.consentId } : {}),
       createdBy: mode === 'edit' ? (child?.createdBy ?? userId) : userId,
     };
 
@@ -285,6 +290,13 @@ export default function ProfileFormPage({ mode }: Props) {
             </div>
           )}
         </div>
+
+        {mode === 'edit' && child && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="text-sm font-medium text-gray-700 mb-4">Media</h2>
+            <MediaUpload child={child} userId={userId} onUpdate={reload} />
+          </div>
+        )}
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">

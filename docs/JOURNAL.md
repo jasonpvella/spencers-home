@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** v1 infrastructure complete. Storage live, platform_admin bootstrapped. Ready for end-to-end core loop validation on the live URL.
+**Current Focus:** Core loop is unblocked. Profile create → detail page → media upload → consent → publish flow is working on the live URL. Next: walk the full loop end-to-end (consent + publish + gallery browse + inquiry).
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -47,12 +47,10 @@
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Diagnose platform_admin login issue on live site (auth succeeds via REST, suspected post-login crash — missing `stateId` on user doc or browser cache). Try incognito first; if white screen after login, add `stateId: 'ts'` to the user doc via bootstrap script or Firebase Console.
-2. Walk the full core loop on the live URL: create profile → consent → publish → browse gallery → submit inquiry → see notification
-3. Task 3: strip SSO from login page and state config UI
-4. Task 4: sponsor logo uploads in state config + landing page
-5. Task 5: polish pass (empty gallery state, mobile check, console errors)
-6. Continue landing page polish — hero layout, card spacing, mobile review
+1. Continue core loop: add consent → publish → browse gallery → submit inquiry → see caseworker notification
+2. Strip SSO from login page and state config UI
+3. Sponsor logo uploads in state config + landing page
+4. Polish pass (empty gallery state, mobile check, console errors)
 
 ---
 
@@ -118,6 +116,24 @@ Export button in Dashboard (state_admin / platform_admin only) generates CSV in-
 ---
 
 ## Historical Log
+
+### 2026-04-11 — Core loop unblocked: profile create + media upload working
+
+**platform_admin `stateId` patched:**
+Bootstrap script (`scripts/bootstrap-admin.ts`) was missing `stateId` on the user doc it wrote. This caused two failures: (1) `collection(db, 'states', '', 'children')` — 2-segment path, Firestore rejected it with "odd number of segments" error; (2) media upload never appeared because the create failed before reaching the detail page. Fixed by running `scripts/patch-admin-stateid.ts` against the live project (adds `stateId: 'ts'` to `users/EoCy0vcpn8RIucC5bsRuOOhn3ak2`). Bootstrap script also updated to include `stateId` going forward.
+
+**`createChild` — undefined field guard:**
+`ProfileFormPage` was passing `videoUrl: undefined` and `consentId: undefined` to Firestore on create. Firestore rejects explicit `undefined` values in `addDoc`. Fixed two ways: (1) payload construction uses spread conditionals to omit undefined optional fields; (2) `createChild()` in `services/children.ts` now strips undefined values before the `addDoc` call.
+
+**MediaUpload added to edit form:**
+MediaUpload component was only on ProfileDetailPage. Added it to `ProfileFormPage` (edit mode only — requires an existing `child` object for stateId/childId). Appears below the ICWA section. Create mode still redirects to detail page after save where upload is also available.
+
+**`stateId` guard on form submit:**
+Added an early return with a user-facing toast if `stateId` is empty, replacing the cryptic Firestore error.
+
+**Profile create confirmed working on live URL.**
+
+---
 
 ### 2026-04-11 — Landing page + gallery UI polish
 

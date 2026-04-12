@@ -41,8 +41,9 @@ export async function createChild(
   data: Omit<ChildProfile, 'id' | 'stateId' | 'createdAt' | 'lastUpdatedAt' | 'viewCount' | 'saveCount' | 'inquiryCount'>,
   createdBy: string
 ): Promise<string> {
+  const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
   const ref = await addDoc(childrenRef(stateId), {
-    ...data,
+    ...clean,
     stateId,
     createdBy,
     viewCount: 0,

@@ -71,6 +71,7 @@ import('firebase-admin').then(async ({ default: admin }) => {
     email: PLATFORM_ADMIN_EMAIL,
     displayName: PLATFORM_ADMIN_NAME,
     role: 'platform_admin',
+    stateId: TEST_STATE_ID,
     active: true,
     createdAt: now,
     lastLoginAt: now,
