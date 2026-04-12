@@ -1,6 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { getActiveSponsors } from '@/services/sponsors';
+import type { Sponsor } from '@/types';
 
 // ─── Category card data ────────────────────────────────────────────────────────
 
@@ -59,15 +61,15 @@ const CATEGORIES = [
   },
 ];
 
-// ─── Placeholder sponsor slots ─────────────────────────────────────────────────
-// Replace these <div> placeholders with <img> tags as sponsors are added.
-
-const SPONSOR_SLOTS = 6;
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+
+  useEffect(() => {
+    getActiveSponsors().then(setSponsors).catch(() => { /* non-critical */ });
+  }, []);
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 200], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 200], [1, 0.95]);
@@ -218,17 +220,42 @@ export default function LandingPage() {
       {/* ── Sponsors ────────────────────────────────────────────────────────── */}
       <section className="bg-white border-t border-gray-100 py-14 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-center text-xs font-semibold text-gray-400 uppercase tracking-widest mb-8">
+          <p className="text-center text-3xl font-semibold text-gray-400 uppercase tracking-widest mb-8">
             Our Partners &amp; Sponsors
           </p>
-          {/* Replace placeholder divs below with <img> tags as sponsors are confirmed */}
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-6 items-center justify-items-center">
-            {Array.from({ length: SPONSOR_SLOTS }).map((_, i) => (
-              <div
-                key={i}
-                className="w-24 h-12 bg-gray-100 rounded-lg border border-dashed border-gray-200"
-              />
-            ))}
+            {sponsors.length > 0
+              ? sponsors.map((sponsor) => {
+                  const logo = (
+                    <img
+                      src={sponsor.logoUrl}
+                      alt={sponsor.name}
+                      className="max-h-32 max-w-[280px] object-contain"
+                      loading="lazy"
+                    />
+                  );
+                  return (
+                    <div key={sponsor.id} className="flex items-center justify-center w-72 h-40">
+                      {sponsor.linkUrl ? (
+                        <a
+                          href={sponsor.linkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={sponsor.name}
+                        >
+                          {logo}
+                        </a>
+                      ) : logo}
+                    </div>
+                  );
+                })
+              : Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-72 h-40 bg-gray-100 rounded-lg border border-dashed border-gray-200"
+                  />
+                ))
+            }
           </div>
         </div>
       </section>
@@ -236,16 +263,7 @@ export default function LandingPage() {
       {/* ── Footer ──────────────────────────────────────────────────────────── */}
       <footer className="bg-white border-t border-gray-100 py-6 px-6 text-center">
         <p className="text-xs text-gray-400">
-          © {new Date().getFullYear()} Spencer's Home · In partnership with{' '}
-          <a
-            href="https://www.theprojectzero.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-gray-600"
-          >
-            Arkansas Project Zero
-          </a>
-          {' '}· Built to serve every child, in every state.
+          © {new Date().getFullYear()} Spencer's Home · Built to serve every child, in every state.
         </p>
       </footer>
 

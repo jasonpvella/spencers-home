@@ -154,6 +154,16 @@ service cloud.firestore {
       }
     }
 
+    // ── Sponsors ─────────────────────────────────────────────────────────────
+    // Public read: shown on the landing page before auth.
+    // Only platform_admin can write or delete.
+
+    match /sponsors/{sponsorId} {
+      allow read: if true;
+      allow write: if isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
+    }
+
     // ── SSO providers ────────────────────────────────────────────────────────
     // Public read: login page fetches this before auth to detect SSO availability.
     // Only state admin (or platform admin) can write. Stores: enabled, providerType,

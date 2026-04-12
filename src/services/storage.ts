@@ -19,6 +19,13 @@ export async function uploadStateLogo(stateId: string, file: File): Promise<stri
   return getDownloadURL(storageRef);
 }
 
+export async function uploadSponsorLogo(file: File): Promise<string> {
+  const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const storageRef = ref(storage, `sponsors/${fileName}`);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
+}
+
 export async function uploadMedia(params: {
   stateId: string;
   childId: string;

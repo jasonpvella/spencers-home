@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** End-to-end loop is working. Photo displays in gallery and public profile page. Video plays via native browser element. Next: walk full loop (consent → publish → browse gallery → submit inquiry → caseworker notification), then strip SSO from UI, sponsor logos, mobile/polish pass.
+**Current Focus:** Sponsor management is live — platform_admin can upload, toggle, and delete sponsor logos from `/admin/sponsors`; logos display on the landing page. Next: walk full core loop (consent → publish → browse gallery → submit inquiry → caseworker notification), strip SSO from login page and state config UI, mobile/polish pass.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -18,7 +18,7 @@
 - **RequireAuth:** loading state, inactive/pending-approval wall, role gate (family → `/`, caseworker → `/dashboard`) ✅
 - **AppShell:** sticky nav, role badge, sign-out, bell notification dropdown for caseworkers, Saved nav link for families, dynamic logo + brand color from state config ✅
 - **Pages built:**
-  - LandingPage: public hero (blurred background + foreground portrait), 4 category cards, about/partnership section, sponsors placeholder grid ✅
+  - LandingPage: public hero (blurred background + foreground portrait), 4 category cards, about/partnership section, live sponsor logos from Firestore ✅
   - GalleryPage (at `/gallery`): video-first ProfileCards, `?category=` pre-filter from landing page, age/gender/video filters, result count, family sign-up banner for anonymous visitors ✅
   - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, AdoptUSKids CSV export, AFCARS CSV export (state_admin+) ✅
   - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section ✅
@@ -49,8 +49,7 @@
 **Next session — in order:**
 1. Walk full core loop: consent → publish → browse gallery → submit inquiry → caseworker notification
 2. Strip SSO from login page and state config UI
-3. Sponsor logo uploads in state config + landing page
-4. Polish pass (empty gallery state, mobile check, console errors)
+3. Polish pass (empty gallery state, mobile check, console errors)
 
 ---
 
@@ -192,6 +191,22 @@ Previously required `request.auth != null` for reads. Gallery and public profile
 
 **ReactPlayer replaced with native `<video>`:**
 ReactPlayer v3's `Preview` component (`light` prop) silently fails to display the thumbnail for non-YouTube/Vimeo URLs — it tries an oEmbed fetch which returns nothing for Firebase Storage URLs, and the `useEffect` dependency array bug means the fallback image is never set. Replaced with `<video src poster controls>` in both `ProfileCard` and `PublicProfilePage`. Simpler, no dependency, works correctly with direct Firebase Storage URLs.
+
+### 2026-04-12 — Sponsor management built and deployed
+
+**Sponsor data model:** New top-level Firestore collection `/sponsors/{sponsorId}`. Fields: `name`, `logoUrl`, `linkUrl?`, `order`, `active`, `uploadedBy`, `createdAt`. Platform-level (not per-state) since the landing page is global.
+
+**`AdminSponsorsPage` (`/admin/sponsors`):** Platform_admin-only page. Add sponsors (name + logo upload + optional link URL + display order), toggle active/hidden, delete. Logos uploaded to Firebase Storage at `sponsors/{fileName}`. Accessible from a "Sponsors" button in the Dashboard header for platform_admin.
+
+**LandingPage wired to Firestore:** `getActiveSponsors()` called on mount. Renders logos in order; falls back to placeholder grid if none exist. Logos are links if `linkUrl` is set. Composite index issue avoided by fetching all sponsors ordered by `order` and filtering `active` client-side.
+
+**Firestore rules:** Added `/sponsors` — `allow read: if true` (public, landing page is unauthenticated), `allow write/delete: if isPlatformAdmin()`. Deployed.
+
+**Storage rules:** Added `sponsors/` path (public read, auth write, image-only, 10 MB max). Also added previously missing `states/{stateId}/branding/` rule that covers agency logo uploads from StateConfigPage. Deployed.
+
+**Landing page polish:** "Our Partners & Sponsors" heading enlarged to `text-3xl`. Sponsor logo containers increased to `w-72 h-40` / `max-h-32`. Removed "In partnership with Arkansas Project Zero" from footer.
+
+---
 
 ### 2026-04-11 — Storage live + platform_admin bootstrap
 

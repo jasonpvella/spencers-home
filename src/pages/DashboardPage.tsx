@@ -138,6 +138,14 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500">{user?.stateId} — {user?.displayName}</p>
         </div>
         <div className="flex items-center gap-2">
+          {user?.role === 'platform_admin' && (
+            <Link
+              to="/admin/sponsors"
+              className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition-colors"
+            >
+              Sponsors
+            </Link>
+          )}
           {(user?.role === 'state_admin' || user?.role === 'platform_admin') && (
             <>
               <button

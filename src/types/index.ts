@@ -170,6 +170,19 @@ export interface SsoProvider {
   updatedAt?: Timestamp;
 }
 
+// ─── Sponsor ───────────────────────────────────────────────────────────────────
+
+export interface Sponsor {
+  id: string;
+  name: string;
+  logoUrl: string;
+  linkUrl?: string;
+  order: number;
+  active: boolean;
+  uploadedBy: string;
+  createdAt: Timestamp;
+}
+
 export type AuditEventType =
   | 'profile_status_change'
   | 'consent_signed'
