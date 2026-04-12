@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  listChildren,
-  listPublishedChildren,
-  getChild,
+  subscribeToChildren,
+  subscribeToPublishedChildren,
+  subscribeToChild,
   createChild,
   updateChild,
   publishProfile,
@@ -15,11 +15,14 @@ export function usePublishedChildren(stateId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!stateId) return;
     setLoading(true);
-    listPublishedChildren(stateId)
-      .then(setChildren)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false));
+    const unsub = subscribeToPublishedChildren(
+      stateId,
+      (data) => { setChildren(data); setLoading(false); },
+      (e) => { setError(e.message); setLoading(false); }
+    );
+    return unsub;
   }, [stateId]);
 
   return { children, loading, error };
@@ -30,17 +33,18 @@ export function useAllChildren(stateId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(() => {
+  useEffect(() => {
+    if (!stateId) return;
     setLoading(true);
-    listChildren(stateId)
-      .then(setChildren)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false));
+    const unsub = subscribeToChildren(
+      stateId,
+      (data) => { setChildren(data); setLoading(false); },
+      (e) => { setError(e.message); setLoading(false); }
+    );
+    return unsub;
   }, [stateId]);
 
-  useEffect(() => { reload(); }, [reload]);
-
-  return { children, loading, error, reload };
+  return { children, loading, error };
 }
 
 export function useChild(stateId: string, childId: string) {
@@ -48,16 +52,20 @@ export function useChild(stateId: string, childId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(() => {
+  useEffect(() => {
     if (!stateId || !childId) return;
     setLoading(true);
-    getChild(stateId, childId)
-      .then(setChild)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
-      .finally(() => setLoading(false));
+    const unsub = subscribeToChild(
+      stateId,
+      childId,
+      (data) => { setChild(data); setLoading(false); },
+      (e) => { setError(e.message); setLoading(false); }
+    );
+    return unsub;
   }, [stateId, childId]);
 
-  useEffect(() => { reload(); }, [reload]);
+  // no-op: onSnapshot keeps data live — callers that invoke reload() still work
+  const reload = useCallback(() => {}, []);
 
   return { child, loading, error, reload };
 }

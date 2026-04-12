@@ -97,23 +97,31 @@ export default function AdminUsersPage() {
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={user.role}
-                    onChange={(e) => changeRole(user, e.target.value as UserRole)}
-                    disabled={updating === user.id}
-                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  >
-                    {ASSIGNABLE_ROLES.map((r) => (
-                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => toggleActive(user)}
-                    disabled={updating === user.id}
-                    className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg disabled:opacity-50 transition-colors"
-                  >
-                    {updating === user.id ? '…' : 'Approve'}
-                  </button>
+                  {user.role === 'platform_admin' ? (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
+                      Platform Admin
+                    </span>
+                  ) : (
+                    <select
+                      value={user.role}
+                      onChange={(e) => changeRole(user, e.target.value as UserRole)}
+                      disabled={updating === user.id}
+                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    >
+                      {ASSIGNABLE_ROLES.map((r) => (
+                        <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                      ))}
+                    </select>
+                  )}
+                  {user.role !== 'platform_admin' && (
+                    <button
+                      onClick={() => toggleActive(user)}
+                      disabled={updating === user.id}
+                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg disabled:opacity-50 transition-colors"
+                    >
+                      {updating === user.id ? '…' : 'Approve'}
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
@@ -145,17 +153,23 @@ export default function AdminUsersPage() {
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={user.role}
-                    onChange={(e) => changeRole(user, e.target.value as UserRole)}
-                    disabled={updating === user.id || user.id === currentUserId}
-                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
-                  >
-                    {ASSIGNABLE_ROLES.map((r) => (
-                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                    ))}
-                  </select>
-                  {user.id !== currentUserId && (
+                  {user.role === 'platform_admin' ? (
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
+                      Platform Admin
+                    </span>
+                  ) : (
+                    <select
+                      value={user.role}
+                      onChange={(e) => changeRole(user, e.target.value as UserRole)}
+                      disabled={updating === user.id || user.id === currentUserId}
+                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
+                    >
+                      {ASSIGNABLE_ROLES.map((r) => (
+                        <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                      ))}
+                    </select>
+                  )}
+                  {user.id !== currentUserId && user.role !== 'platform_admin' && (
                     <button
                       onClick={() => toggleActive(user)}
                       disabled={updating === user.id}

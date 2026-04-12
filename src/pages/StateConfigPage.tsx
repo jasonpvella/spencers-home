@@ -106,7 +106,7 @@ export default function StateConfigPage() {
         ? { ...prev, branding: { ...prev.branding, logoUrl: url } }
         : { stateId, stateName: '', agencyName: '', consentModel: 'supervisor', consentExpiryDays: 365, requireYouthAssentAge: 12, icwaEnabled: true, galleryTiers: { public: { showFullName: false, showAge: true, showBio: true, showVideo: true, showPhotos: true }, registered: { showFullName: false, showAge: true, showBio: true, showVideo: true, showPhotos: true }, agency: { showFullName: true, showAge: true, showBio: true, showVideo: true, showPhotos: true } }, branding: { primaryColor: '#1d4ed8', logoUrl: url }, piiRules: { firstNameOnly: true, noSchoolNames: true, noLocationIdentifiers: true, additionalRules: [] } }
       );
-      toast('Logo uploaded', 'success');
+      toast('Logo uploaded — click Save configuration below to apply it', 'info');
     } catch {
       toast('Logo upload failed', 'error');
     } finally {

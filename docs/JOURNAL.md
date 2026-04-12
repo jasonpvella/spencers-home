@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Sponsor management is live — platform_admin can upload, toggle, and delete sponsor logos from `/admin/sponsors`; logos display on the landing page. Next: walk full core loop (consent → publish → browse gallery → submit inquiry → caseworker notification), strip SSO from login page and state config UI, mobile/polish pass.
+**Current Focus:** Architecture guardrails established + 8 cross-role bugs fixed. Real-time Firestore listeners now replace one-shot fetches across all child data hooks — stale-data errors after writes are eliminated. Next: walk full core loop (consent → publish → browse gallery → submit inquiry → caseworker notification), strip SSO from login page and state config UI, mobile/polish pass.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -75,6 +75,9 @@ All profile status changes, consent events, media uploads, and user role changes
 
 ### Consent Language — Nebraska Draft v1 (2026-04-09 → updated 2026-04-09)
 Consent form now contains Nebraska-specific draft language (`consentLanguageVersion: 'ne-draft-v1'`). Cites Neb. Rev. Stat. § 43-104 et seq. (legal basis), § 84-712.05 (PII), Title IV-E Plan, and DHHS Policy Manual Ch. 7. Covers scope of authorization, duration/renewal, and right to withdraw. Amber banner and italic footer both name Kirsten Manert (Nebraska DHHS Recruitment) as the required sign-off contact. Must not be used with real child data until DHHS written approval is obtained.
+
+### Real-Time Listeners as Default for Child Data (2026-04-12)
+All hooks that read child profiles (`usePublishedChildren`, `useAllChildren`, `useChild`) use `onSnapshot` real-time subscriptions, not one-shot fetches. Service layer exposes `subscribeToChildren`, `subscribeToPublishedChildren`, `subscribeToChild` — hooks call these and return the unsubscribe function from `useEffect` cleanup. One-shot service functions (`listChildren`, `listPublishedChildren`, `getChild`) are retained for any future non-hook use. `reload()` is kept as a no-op in hook return values for backwards compatibility with existing callers.
 
 ### Fixed Interests List (2026-04-09)
 18-item fixed list in `constants.ts`. Chosen for consistency in future gallery filtering. State-specific customization deferred to Phase 2 state config panel.
@@ -191,6 +194,36 @@ Previously required `request.auth != null` for reads. Gallery and public profile
 
 **ReactPlayer replaced with native `<video>`:**
 ReactPlayer v3's `Preview` component (`light` prop) silently fails to display the thumbnail for non-YouTube/Vimeo URLs — it tries an oEmbed fetch which returns nothing for Firebase Storage URLs, and the `useEffect` dependency array bug means the fallback image is never set. Replaced with `<video src poster controls>` in both `ProfileCard` and `PublicProfilePage`. Simpler, no dependency, works correctly with direct Firebase Storage URLs.
+
+### 2026-04-12 — Architecture manifesto + 8 cross-role bug fixes
+
+**Root cause investigation:** Full codebase audit across all pages, hooks, services, and Firestore/Storage rules. Found two systemic failure patterns: (1) one-shot fetches producing stale UI after writes, and (2) silent error swallowing hiding real failures.
+
+**Architecture Manifesto created (`docs/ARCHITECTURE_MANIFESTO.md`):**
+Pre-flight protocol requiring an Impact Analysis in plain English before any new feature code is written. Covers: role impact check, signed URL rule, Firestore write requirements (stateId + rule + audit log), real-time listener requirement, layer boundaries (pages/hooks/services), loading/error states, and a self-correction gate. `CLAUDE.md` updated to reference it as a mandatory pre-task read.
+
+**All child data hooks converted to real-time `onSnapshot` listeners (`hooks/useChildren.ts`):**
+`usePublishedChildren`, `useAllChildren`, and `useChild` previously used one-shot `getDocs`/`getDoc` fetches. After any write (create, publish, upload), the UI only updated if `reload()` was called explicitly — and only if the call wasn't missed. Converted all three to `onSnapshot` subscriptions via new service functions (`subscribeToChildren`, `subscribeToPublishedChildren`, `subscribeToChild` in `services/children.ts`). Unsubscribe returned from `useEffect` cleanup. `reload()` kept as a no-op for backwards compat with callers.
+
+**Photo upload overwrite risk fixed (`components/profile/MediaUpload.tsx`):**
+Photo append used `{ photoUrls: [...child.photoUrls, url] }` — a spread of the prop snapshot. Under concurrent or fast sequential uploads, stale snapshot could overwrite a previously uploaded URL. Fixed with Firestore `arrayUnion` via new `addPhotoUrl()` in `services/children.ts`. Writes are now atomic appends.
+
+**Sponsor logo fetch error no longer swallowed silently (`pages/LandingPage.tsx`):**
+`.catch(() => { /* non-critical */ })` replaced with `console.error(...)`. Failure is now visible in devtools — diagnosable instead of invisible.
+
+**Consent and inquiry fetch errors surfaced (`pages/ProfileDetailPage.tsx`):**
+Both `useEffect` blocks had `.catch(() => undefined)` — permission errors and network failures were completely invisible. Changed to `console.error`. Inquiry section now has its own `inquiriesLoading` boolean — previously showed "Loading…" indefinitely if the fetch completed but returned empty (data inconsistency).
+
+**State config logo upload — user warned to save (`pages/StateConfigPage.tsx`):**
+Logo uploads immediately to Storage but URL only persists on form submit. If the user navigated away without saving, the URL was silently lost. Toast changed from "Logo uploaded" to "Logo uploaded — click Save configuration below to apply it."
+
+**Firestore rule — state admin can no longer modify platform_admin accounts (`firestore.rules`):**
+`isStateAdmin()` update rule was missing a guard on the existing resource role. A state admin could set `active: false` on a platform_admin. Added `resource.data.role != 'platform_admin'` so neither deactivation nor role change is permitted on platform_admin accounts by anyone below platform_admin.
+
+**Platform admin shown as read-only in user management (`pages/AdminUsersPage.tsx`):**
+`ASSIGNABLE_ROLES` didn't include `platform_admin`, so platform admins appeared in the user list with the dropdown defaulting to "Caseworker" — visually wrong and potentially confusing. Now renders a read-only purple "Platform Admin" badge with no dropdown and no deactivate button for that role.
+
+---
 
 ### 2026-04-12 — Sponsor management built and deployed
 

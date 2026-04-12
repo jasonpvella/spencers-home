@@ -57,11 +57,13 @@ service cloud.firestore {
 
       // Platform admin: full update authority.
       // State admin: can activate/deactivate and change roles for users in
-      //   their own state, but cannot set or preserve platform_admin role.
+      //   their own state, but cannot modify platform_admin accounts or
+      //   promote anyone to platform_admin.
       // Self: user can update their own lastLoginAt only.
       allow update: if isPlatformAdmin()
         || (isStateAdmin()
             && belongsToState(resource.data.stateId)
+            && resource.data.role != 'platform_admin'
             && request.resource.data.role != 'platform_admin')
         || (isAuth()
             && request.auth.uid == userId

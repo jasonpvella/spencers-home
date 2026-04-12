@@ -5,11 +5,14 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  arrayUnion,
   increment,
+  onSnapshot,
   query,
   where,
   serverTimestamp,
   runTransaction,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { writeAuditLog } from './audit';
@@ -84,6 +87,61 @@ export async function updateChild(
     });
   }
 }
+
+// ── Real-time subscriptions ───────────────────────────────────────────────────
+
+export function subscribeToChildren(
+  stateId: string,
+  onChange: (children: ChildProfile[]) => void,
+  onError: (e: Error) => void
+): Unsubscribe {
+  return onSnapshot(
+    childrenRef(stateId),
+    (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ChildProfile)),
+    onError
+  );
+}
+
+export function subscribeToPublishedChildren(
+  stateId: string,
+  onChange: (children: ChildProfile[]) => void,
+  onError: (e: Error) => void
+): Unsubscribe {
+  const q = query(childrenRef(stateId), where('status', '==', 'published'));
+  return onSnapshot(
+    q,
+    (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ChildProfile)),
+    onError
+  );
+}
+
+export function subscribeToChild(
+  stateId: string,
+  childId: string,
+  onChange: (child: ChildProfile | null) => void,
+  onError: (e: Error) => void
+): Unsubscribe {
+  return onSnapshot(
+    doc(db, 'states', stateId, 'children', childId),
+    (snap) => onChange(snap.exists() ? ({ id: snap.id, ...snap.data() } as ChildProfile) : null),
+    onError
+  );
+}
+
+// Safe photo append — uses arrayUnion so concurrent uploads can't overwrite each other
+export async function addPhotoUrl(
+  stateId: string,
+  childId: string,
+  url: string,
+  updatedBy: string
+): Promise<void> {
+  await updateDoc(doc(db, 'states', stateId, 'children', childId), {
+    photoUrls: arrayUnion(url),
+    lastUpdatedAt: serverTimestamp(),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function recordProfileView(stateId: string, childId: string): Promise<void> {
   await updateDoc(doc(db, 'states', stateId, 'children', childId), {

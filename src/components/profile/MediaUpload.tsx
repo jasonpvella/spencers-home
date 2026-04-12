@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { uploadMedia } from '@/services/storage';
-import { updateChild } from '@/services/children';
+import { addPhotoUrl, updateChild } from '@/services/children';
 import { useToast } from '@/components/shared/Toaster';
 import type { ChildProfile } from '@/types';
 
@@ -38,12 +38,7 @@ export default function MediaUpload({ child, userId, onUpdate }: Props) {
           file,
           uploadedBy: userId,
         });
-        await updateChild(
-          child.stateId,
-          child.id,
-          { photoUrls: [...child.photoUrls, url] },
-          userId
-        );
+        await addPhotoUrl(child.stateId, child.id, url, userId);
         setImageUpload(null);
         toast('Photo uploaded', 'success');
         onUpdate();

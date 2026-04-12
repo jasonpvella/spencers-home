@@ -47,12 +47,16 @@ export default function ProfileDetailPage() {
   const { toast } = useToast();
   const [consentRecord, setConsentRecord] = useState<ConsentRecord | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiriesLoading, setInquiriesLoading] = useState(false);
 
   useEffect(() => {
     if (child?.consentId && stateId) {
       getConsent(stateId, child.consentId)
         .then(setConsentRecord)
-        .catch(() => undefined);
+        .catch((e: unknown) => {
+          console.error('[ProfileDetailPage] Failed to load consent record:', e);
+          setConsentRecord(null);
+        });
     } else {
       setConsentRecord(null);
     }
@@ -60,9 +64,13 @@ export default function ProfileDetailPage() {
 
   useEffect(() => {
     if (childId && stateId && child && child.inquiryCount > 0) {
+      setInquiriesLoading(true);
       getInquiries(stateId, childId)
         .then(setInquiries)
-        .catch(() => undefined);
+        .catch((e: unknown) => {
+          console.error('[ProfileDetailPage] Failed to load inquiries:', e);
+        })
+        .finally(() => setInquiriesLoading(false));
     }
   }, [childId, stateId, child?.inquiryCount]);
 
@@ -330,8 +338,10 @@ export default function ProfileDetailPage() {
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">
               Inquiries ({child.inquiryCount})
             </p>
-            {inquiries.length === 0 ? (
+            {inquiriesLoading ? (
               <p className="text-sm text-gray-400">Loading…</p>
+            ) : inquiries.length === 0 ? (
+              <p className="text-sm text-gray-400">No inquiries found.</p>
             ) : (
               <div className="space-y-4">
                 {inquiries.map((inq) => (

@@ -68,7 +68,9 @@ export default function LandingPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
 
   useEffect(() => {
-    getActiveSponsors().then(setSponsors).catch(() => { /* non-critical */ });
+    getActiveSponsors().then(setSponsors).catch((e: unknown) => {
+      console.error('[LandingPage] Failed to load sponsors:', e);
+    });
   }, []);
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 200], [1, 0]);
