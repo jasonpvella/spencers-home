@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Architecture guardrails established + 8 cross-role bugs fixed. Real-time Firestore listeners now replace one-shot fetches across all child data hooks — stale-data errors after writes are eliminated. Next: walk full core loop (consent → publish → browse gallery → submit inquiry → caseworker notification), strip SSO from login page and state config UI, mobile/polish pass.
+**Current Focus:** Core loop pre-walk complete. Notifications composite index added and deployed. Ready to run the full loop end-to-end: create profile → consent → publish (supervisor) → browse gallery (anonymous) → inquire → caseworker bell notification.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -33,6 +33,7 @@
 - **InquiryModal:** public gallery CTA, writes to Firestore, increments inquiryCount, triggers caseworker notification ✅
 - **Toast system:** Radix Toast, success/error/info, wired into all mutations ✅
 - **Firestore security rules:** full audit complete, 5 critical bugs fixed, field-level update restrictions added, `ssoProviders` public read ✅
+- **Firestore indexes:** children (status+age, status+gender, status+lastUpdatedAt) + notifications (userId+read+createdAt) ✅
 - **Storage rules deployed** ✅
 - **Emulator seed script:** `scripts/seed-emulator.ts` — 3 users, 4 child profiles, 2 consents, 2 inquiries, NE state config ✅
 - **Admin bootstrap script:** `scripts/bootstrap-admin.ts` — creates platform_admin + Test State in live Firebase ✅
@@ -47,7 +48,7 @@
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Walk full core loop: consent → publish → browse gallery → submit inquiry → caseworker notification
+1. Walk the core loop end-to-end (index is deployed — should be fully unblocked now)
 2. Strip SSO from login page and state config UI
 3. Polish pass (empty gallery state, mobile check, console errors)
 
@@ -118,6 +119,17 @@ Export button in Dashboard (state_admin / platform_admin only) generates CSV in-
 ---
 
 ## Historical Log
+
+### 2026-04-12 — Notifications index added; core loop pre-walk complete
+
+**Pre-walk audit:**
+Full code review of all five core loop steps (consent → publish → browse → inquire → notify). Every step reviewed: ConsentFormPage, ProfileDetailPage publish flow, GalleryPage, PublicProfilePage inquiry form, notifications service and bell. Code and Firestore rules confirmed correct for all steps.
+
+**Missing composite index on `notifications`:**
+`subscribeToNotifications` queries `userId == X AND read == false ORDER BY createdAt DESC` — a three-field compound query. No composite index existed for the `notifications` collection in `firestore.indexes.json` or in the deployed project. Without it, the `onSnapshot` listener fails silently (no error handler) and the bell never rings. Added the index (`userId ASC, read ASC, createdAt DESC`) to `firestore.indexes.json` and deployed via `firebase deploy --only firestore:indexes`.
+
+**Core loop walk prepared:**
+Step-by-step run order documented: caseworker window (create + consent), supervisor window (publish), anonymous incognito window (browse + inquire), caseworker window (bell notification). All known blockers cleared.
 
 ### 2026-04-11 — Core loop unblocked: profile create + media upload working
 
