@@ -95,13 +95,13 @@ export default function AdminUsersPage() {
           </div>
           <ul className="divide-y divide-yellow-100">
             {pending.map((user) => (
-              <li key={user.id} className="flex items-center justify-between px-4 py-3">
+              <li key={user.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 gap-2">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{user.displayName}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                   <p className="text-xs text-yellow-700 mt-0.5">Requested: {ROLE_LABELS[user.role]}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {user.role === 'platform_admin' ? (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
                       Platform Admin
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
                       value={user.role}
                       onChange={(e) => changeRole(user, e.target.value as UserRole)}
                       disabled={updating === user.id}
-                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                       {ASSIGNABLE_ROLES.map((r) => (
                         <option key={r} value={r}>{ROLE_LABELS[r]}</option>
@@ -122,7 +122,7 @@ export default function AdminUsersPage() {
                     <button
                       onClick={() => toggleActive(user)}
                       disabled={updating === user.id}
-                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg disabled:opacity-50 transition-colors"
+                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
                     >
                       {updating === user.id ? '…' : 'Approve'}
                     </button>
@@ -147,7 +147,7 @@ export default function AdminUsersPage() {
         ) : (
           <ul className="divide-y divide-gray-100">
             {active.map((user) => (
-              <li key={user.id} className="flex items-center justify-between px-4 py-3">
+              <li key={user.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 gap-2">
                 <div>
                   <p className="text-sm font-medium text-gray-900">
                     {user.displayName}
@@ -157,7 +157,7 @@ export default function AdminUsersPage() {
                   </p>
                   <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {user.role === 'platform_admin' ? (
                     <span className="text-xs px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">
                       Platform Admin
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
                       value={user.role}
                       onChange={(e) => changeRole(user, e.target.value as UserRole)}
                       disabled={updating === user.id || user.id === currentUserId}
-                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
+                      className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
                     >
                       {ASSIGNABLE_ROLES.map((r) => (
                         <option key={r} value={r}>{ROLE_LABELS[r]}</option>

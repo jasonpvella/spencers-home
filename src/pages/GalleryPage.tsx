@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DEFAULT_STATE_ID } from '@/config/constants';
 import { usePublishedChildren } from '@/hooks/useChildren';
@@ -23,6 +23,17 @@ const DEFAULT_FILTERS: Filters = {
   video: 'all',
 };
 
+const FILTER_KEY = 'gallery_filters';
+const SCROLL_KEY = 'gallery_scroll';
+
+function readStoredFilters(): Filters {
+  try {
+    const s = sessionStorage.getItem(FILTER_KEY);
+    if (s) return JSON.parse(s) as Filters;
+  } catch { /* ignore */ }
+  return DEFAULT_FILTERS;
+}
+
 const CATEGORY_LABELS: Record<CategoryParam, string> = {
   individuals: 'Individuals',
   siblings: 'Siblings',
@@ -34,7 +45,34 @@ export default function GalleryPage() {
   const [searchParams] = useSearchParams();
   const category = (searchParams.get('category') ?? '') as CategoryParam | '';
   const { children, loading, error } = usePublishedChildren(DEFAULT_STATE_ID);
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<Filters>(readStoredFilters);
+  const scrollRestoredRef = useRef(false);
+
+  // Persist filters to sessionStorage whenever they change
+  useEffect(() => {
+    sessionStorage.setItem(FILTER_KEY, JSON.stringify(filters));
+  }, [filters]);
+
+  // Save scroll position as the user scrolls
+  useEffect(() => {
+    function onScroll() {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
+  // Restore scroll position once data has loaded
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    scrollRestoredRef.current = true;
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    if (saved) {
+      requestAnimationFrame(() => window.scrollTo(0, parseInt(saved, 10)));
+    }
+  }, [loading]);
   const filtered = useMemo(() => {
     return children.filter((child) => {
       // Category pre-filter from landing page

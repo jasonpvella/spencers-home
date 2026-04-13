@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** UX gap pass complete. All core user-facing workflows now have proper self-service, visibility, and admin tooling. Platform is demo-ready for a state walkthrough.
+**Current Focus:** Mobile polish pass complete. Landing page and gallery confirmed great on device; all authenticated pages now responsive. Gallery scroll/filter persistence fixed on back-navigation.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -16,20 +16,20 @@
 - Zustand auth store ✅
 - **Auth flows:** Login + password reset + "forgot password" + caseworker self-service registration (pending approval) + family self-registration (auto-approved) + SSO (SAML/OIDC redirect, first-login provisioning) ✅
 - **RequireAuth:** loading state, inactive/pending-approval wall, role gate (family → `/`, caseworker → `/dashboard`) ✅
-- **AppShell:** sticky nav, role badge (now links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config ✅
+- **AppShell:** sticky nav with hamburger menu on mobile (< 768px), role badge (links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config ✅
 - **Pages built:**
   - LandingPage: public hero, 4 category cards, about/partnership section, live sponsor logos ✅
-  - GalleryPage (`/gallery`): video-first ProfileCards, filters, family sign-up banner ✅
-  - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, CSV exports ✅
+  - GalleryPage (`/gallery`): video-first ProfileCards, filters (persisted to sessionStorage), scroll position restored on back-navigation ✅
+  - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, CSV exports — mobile-responsive header ✅
   - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section ✅
-  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons, inline media, archive, inquiry list, sibling group management ✅
+  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons (mobile-stacked), inline media, archive, inquiry list, sibling group management ✅
   - ConsentFormPage: canvas draw signature, youth assent + ICWA conditional fields, Nebraska draft language ✅
-  - AdminUsersPage: list users by state, approve (with "notify them" reminder toast) / deactivate, role change, requested role shown on pending users ✅
+  - AdminUsersPage: list users by state, approve (with "notify them" reminder toast) / deactivate, role change, requested role shown on pending users — mobile-stacked rows ✅
   - RegisterPage: self-service registration with role selector (caseworker or supervisor), pending approval flow, fires admin notification on submit ✅
   - FamilyRegisterPage: self-service family account at `/register/family`, auto-approved ✅
   - StateConfigPage: branding, consent model, SSO config ✅
   - FavoritesPage: saved profiles for family users ✅
-  - **AccountSettingsPage (`/settings`):** display name update (Auth + Firestore) + password change (reauthenticate → updatePassword) ✅
+  - AccountSettingsPage (`/settings`): display name update (Auth + Firestore) + password change (reauthenticate → updatePassword) ✅
 - **MediaUpload component:** react-dropzone, per-file progress bar, photo + video ✅
 - **InquiryModal:** public gallery CTA, writes to Firestore, triggers caseworker notification ✅
 - **Toast system:** Radix Toast, success/error/info ✅
@@ -42,10 +42,10 @@
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Walk the core loop end-to-end and test new UX flows (registration with role, approval notification bell, settings page, sibling linking)
+1. Walk the core loop end-to-end on both desktop and mobile
 2. Strip SSO from login page and state config UI
-3. Polish pass (empty gallery state, mobile check, console errors)
-4. Deploy to live: `firebase deploy`
+3. Empty gallery state polish + console error audit
+4. First demo prep: decide which state admin account to use for walkthrough
 
 ---
 
@@ -126,6 +126,27 @@ Cloud Functions not initialized. Decision: defer until a real sending domain is 
 ---
 
 ## Historical Log
+
+### 2026-04-12 — Mobile polish: hamburger nav, gallery scroll persistence, responsive admin pages
+
+Confirmed landing page and gallery look great on device. Fixed two issues reported from phone testing.
+
+**Gallery scroll/filter persistence (GalleryPage):**
+Gallery filters (age, gender, video) now persist to `sessionStorage` on every change and are read back on mount. Scroll Y position is saved on every scroll event and restored via `requestAnimationFrame` after data loads. Result: hitting browser back from a profile returns to the exact scroll position and filter state.
+
+**AppShell hamburger menu:**
+At `< md` (768px), nav links hidden and replaced with a hamburger icon. Tapping opens a 56-width dropdown panel containing all nav links, username/role (links to Settings), and Sign out. Panel auto-closes on outside tap, link click, or route change. Bell notification icon remains always visible. Desktop layout unchanged.
+
+**DashboardPage mobile:**
+Header now stacks vertically on mobile (`flex-col sm:flex-row`). Export button labels shorten to "AFCARS CSV" / "AdoptUSKids CSV" on mobile (prefix `hidden sm:inline`). Button group uses `flex-wrap` to prevent overflow.
+
+**AdminUsersPage mobile:**
+Both pending-approval and active user rows now use `flex-col sm:flex-row` so user info stacks above the role selector and action buttons on narrow screens.
+
+**ProfileDetailPage mobile:**
+Action button group (Edit / Submit for review / Add consent / Publish) stacks below the child name on mobile (`flex-col sm:flex-row`), removing the cramped justify-between layout.
+
+Deployed to https://spencers-home-dev.web.app. TypeScript: 0 errors.
 
 ### 2026-04-12 — UX gap pass: consent viewing, registration role, admin notifications, settings, sibling groups
 

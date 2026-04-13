@@ -132,16 +132,16 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500">{user?.stateId} — {user?.displayName}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {user?.role === 'platform_admin' && (
             <Link
               to="/admin/sponsors"
-              className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition-colors"
+              className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-3 py-2 rounded-lg transition-colors"
             >
               Sponsors
             </Link>
@@ -152,19 +152,19 @@ export default function DashboardPage() {
                 type="button"
                 disabled={loading || children.filter((c) => c.status !== 'archived').length === 0}
                 onClick={() => exportAFCARS(children, stateId)}
-                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-3 py-2 rounded-lg transition-colors disabled:opacity-40"
                 title="Export AFCARS-ready CSV (partial — complete DOB, race, and legal fields before federal submission)"
               >
-                Export AFCARS CSV
+                <span className="hidden sm:inline">Export </span>AFCARS CSV
               </button>
               <button
                 type="button"
                 disabled={loading || counts.published === 0}
                 onClick={() => exportAdoptUSKidsCSV(children)}
-                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 px-3 py-2 rounded-lg transition-colors disabled:opacity-40"
                 title={counts.published === 0 ? 'No published profiles to export' : undefined}
               >
-                Export AdoptUSKids CSV
+                <span className="hidden sm:inline">Export </span>AdoptUSKids CSV
               </button>
             </>
           )}
@@ -225,7 +225,7 @@ export default function DashboardPage() {
             placeholder="Search by name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="ml-auto w-44 border border-gray-300 rounded-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="ml-auto w-full max-w-[180px] border border-gray-300 rounded-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
         {loading ? (

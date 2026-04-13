@@ -180,7 +180,7 @@ export default function ProfileDetailPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link to="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">
@@ -195,7 +195,7 @@ export default function ProfileDetailPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap justify-end">
+        <div className="flex items-center gap-2 flex-wrap">
           {canEdit && (
             <Link
               to={`/profile/${childId}/edit`}
