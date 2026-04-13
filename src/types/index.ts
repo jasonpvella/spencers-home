@@ -148,11 +148,15 @@ export interface Inquiry {
 
 export interface Notification {
   id: string;
-  userId: string;
+  userId: string;  // specific user ID, or 'admin:{stateId}' for admin-targeted notifications
   stateId: string;
-  childId: string;
-  childFirstName: string;
-  inquirerName: string;
+  type?: 'inquiry' | 'registration';
+  // Inquiry-specific
+  childId?: string;
+  childFirstName?: string;
+  inquirerName?: string;
+  // Registration-specific
+  message?: string;
   read: boolean;
   createdAt: Timestamp;
 }

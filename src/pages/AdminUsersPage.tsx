@@ -43,7 +43,11 @@ export default function AdminUsersPage() {
     setUpdating(user.id);
     try {
       await setUserActive(user.id, !user.active, currentUserId, stateId);
-      toast(`${user.displayName} ${!user.active ? 'activated' : 'deactivated'}`, 'success');
+      if (!user.active) {
+        toast(`${user.displayName} approved — remember to notify them by email`, 'success');
+      } else {
+        toast(`${user.displayName} deactivated`, 'info');
+      }
       loadUsers();
     } catch {
       toast('Failed to update user', 'error');
@@ -95,6 +99,7 @@ export default function AdminUsersPage() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">{user.displayName}</p>
                   <p className="text-xs text-gray-500">{user.email}</p>
+                  <p className="text-xs text-yellow-700 mt-0.5">Requested: {ROLE_LABELS[user.role]}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {user.role === 'platform_admin' ? (

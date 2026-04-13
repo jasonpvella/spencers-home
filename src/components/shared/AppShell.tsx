@@ -63,11 +63,15 @@ export default function AppShell({ children }: Props) {
     navigate('/login');
   }
 
-  async function handleNotificationClick(notifId: string, childId: string) {
+  async function handleNotificationClick(notifId: string, notif: { type?: string; childId?: string }) {
     if (!user?.stateId) return;
     setBellOpen(false);
     await markNotificationRead(user.stateId, notifId);
-    navigate(`/profile/${childId}`);
+    if (notif.type === 'registration') {
+      navigate('/admin/users');
+    } else if (notif.childId) {
+      navigate(`/profile/${notif.childId}`);
+    }
   }
 
   const isAdmin = ADMIN_ROLES.includes(user?.role as typeof ADMIN_ROLES[number]);
@@ -145,9 +149,12 @@ export default function AppShell({ children }: Props) {
 
           <div className="flex items-center gap-3">
             {user && (
-              <span className="text-xs text-gray-400 hidden sm:block">
+              <NavLink
+                to="/settings"
+                className="text-xs text-gray-400 hover:text-gray-700 hidden sm:block transition-colors"
+              >
                 {user.displayName} · {user.role.replace(/_/g, ' ')}
-              </span>
+              </NavLink>
             )}
 
             {/* Notification bell */}
@@ -182,13 +189,19 @@ export default function AppShell({ children }: Props) {
                           <li key={n.id}>
                             <button
                               type="button"
-                              onClick={() => handleNotificationClick(n.id, n.childId)}
+                              onClick={() => handleNotificationClick(n.id, { type: n.type, childId: n.childId })}
                               className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
                             >
-                              <p className="text-sm text-gray-900">
-                                New inquiry for <span className="font-medium">{n.childFirstName}</span>
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">From {n.inquirerName}</p>
+                              {n.type === 'registration' ? (
+                                <p className="text-sm text-gray-900">{n.message}</p>
+                              ) : (
+                                <>
+                                  <p className="text-sm text-gray-900">
+                                    New inquiry for <span className="font-medium">{n.childFirstName}</span>
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-0.5">From {n.inquirerName}</p>
+                                </>
+                              )}
                             </button>
                           </li>
                         ))}

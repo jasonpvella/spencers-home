@@ -48,11 +48,11 @@ service cloud.firestore {
       );
 
       // Self-registration: user can create their own doc immediately after
-      // Firebase Auth account creation. Role is locked to caseworker
-      // at create time — no self-escalation to admin roles.
+      // Firebase Auth account creation. Role may be caseworker or supervisor
+      // (a request — admin still must approve). No self-escalation to admin roles.
       allow create: if isAuth()
         && request.auth.uid == userId
-        && request.resource.data.role == 'caseworker'
+        && request.resource.data.role in ['caseworker', 'supervisor']
         && request.resource.data.stateId is string;
 
       // Platform admin: full update authority.
@@ -124,13 +124,20 @@ service cloud.firestore {
       }
 
       // Notifications — written by public inquiry flow (no auth required to create)
-      // Only the target user can read or mark as read.
+      // The target user can read or mark as read their own notifications.
+      // State admins can also read/mark-read admin-sentinel notifications (userId == 'admin:{stateId}').
       // Update is restricted to the read field only — no other fields may change.
       match /notifications/{notifId} {
         allow create: if true;
-        allow read: if isAuth() && request.auth.uid == resource.data.userId;
+        allow read: if isAuth() && (
+          request.auth.uid == resource.data.userId
+          || (isStateAdmin() && belongsToState(stateId) && resource.data.userId == 'admin:' + stateId)
+        );
         allow update: if isAuth()
-          && request.auth.uid == resource.data.userId
+          && (
+            request.auth.uid == resource.data.userId
+            || (isStateAdmin() && belongsToState(stateId) && resource.data.userId == 'admin:' + stateId)
+          )
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
         allow delete: if false;
       }

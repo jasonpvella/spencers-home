@@ -17,8 +17,8 @@ Named for Spencer, a foster child who lived in the Vella home in Bentonville, Ar
 **First state:** TBD — no longer Nebraska-first. The platform must be fully state-agnostic from day one. Any state can be onboarded.
 
 **Nebraska remains a target** (Heart Gallery closed, 913 waiting children, no replacement being built, 2025–2029 federal plan cites a dead contract) but is not the launch dependency it once was.
-- DHHS contact: Kirsten Manert, 531-350-2755
-- CSI (former Heart Gallery operator): 402-553-6000
+- DHHS contact: Kirsten Manert
+- CSI (former Heart Gallery operator)
 
 ## Benchmark / Partner
 
@@ -67,10 +67,13 @@ Arkansas Project Zero (theprojectzero.org): 200+ professional films, 138K Facebo
 
 - [x] Security audit (Firestore rules — 5 critical bugs fixed, field-level restrictions added)
 - [x] Performance optimization (route code splitting, image lazy load, chunk splitting, preconnect)
-- [ ] SSO integration (scaffold complete — Firebase SAML configured, not yet enabled/tested)
 - [x] AFCARS-ready data export
 - [x] White-label branding (dynamic color, logo upload, custom domain field — any state)
+- [x] Sponsor management (admin upload/toggle/delete, live logos on landing page)
+- [x] UX gap pass: consent signature viewing, role-at-registration, admin new-user notifications, account settings page, sibling group management
 - [ ] State-specific consent form template (Nebraska ne-draft-v1 exists as reference; generalize for other states)
+- [ ] End-to-end core loop walk + polish pass (empty states, mobile, console errors)
+- [ ] Deploy to production: `firebase deploy`
 
 ### Phase 5 — Mobile (Post-contract)
 - Expo (React Native) app for caseworker field capture (video + photo)
@@ -81,6 +84,7 @@ Arkansas Project Zero (theprojectzero.org): 200+ professional films, 138K Facebo
 ## Backlog (Deferred — No Phase Assigned Yet)
 
 - **Prod/dev Firebase environment split** — Create a dedicated `spencers-home-prod` Firebase project (separate billing, separate data, tighter rules). v1 runs on `spencers-home-dev`. Trigger: first real state contract signed, or first real child data entered.
+- **SSO / SAML integration** — Firebase SAML was scaffolded but stripped from the UI. Optional future capability for states that require single sign-on through their identity provider (e.g. state Active Directory). Not a near-term requirement.
 
 ---
 

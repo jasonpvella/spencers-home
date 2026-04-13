@@ -6,6 +6,7 @@ import {
   addDoc,
   updateDoc,
   arrayUnion,
+  arrayRemove,
   increment,
   onSnapshot,
   query,
@@ -133,7 +134,7 @@ export async function addPhotoUrl(
   stateId: string,
   childId: string,
   url: string,
-  updatedBy: string
+  _updatedBy: string
 ): Promise<void> {
   await updateDoc(doc(db, 'states', stateId, 'children', childId), {
     photoUrls: arrayUnion(url),
@@ -146,6 +147,32 @@ export async function addPhotoUrl(
 export async function recordProfileView(stateId: string, childId: string): Promise<void> {
   await updateDoc(doc(db, 'states', stateId, 'children', childId), {
     viewCount: increment(1),
+  });
+}
+
+export async function linkSibling(
+  stateId: string,
+  childId: string,
+  siblingId: string
+): Promise<void> {
+  const childRef = doc(db, 'states', stateId, 'children', childId);
+  const siblingRef = doc(db, 'states', stateId, 'children', siblingId);
+  await runTransaction(db, async (tx) => {
+    tx.update(childRef, { siblingGroupIds: arrayUnion(siblingId), lastUpdatedAt: serverTimestamp() });
+    tx.update(siblingRef, { siblingGroupIds: arrayUnion(childId), lastUpdatedAt: serverTimestamp() });
+  });
+}
+
+export async function unlinkSibling(
+  stateId: string,
+  childId: string,
+  siblingId: string
+): Promise<void> {
+  const childRef = doc(db, 'states', stateId, 'children', childId);
+  const siblingRef = doc(db, 'states', stateId, 'children', siblingId);
+  await runTransaction(db, async (tx) => {
+    tx.update(childRef, { siblingGroupIds: arrayRemove(siblingId), lastUpdatedAt: serverTimestamp() });
+    tx.update(siblingRef, { siblingGroupIds: arrayRemove(childId), lastUpdatedAt: serverTimestamp() });
   });
 }
 

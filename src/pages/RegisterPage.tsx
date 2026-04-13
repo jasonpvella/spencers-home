@@ -7,12 +7,14 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { auth, db } from '@/config/firebase';
 import { DEFAULT_STATE_ID } from '@/config/constants';
+import { createRegistrationNotification } from '@/services/notifications';
 
 const schema = z.object({
   displayName: z.string().min(2, 'Full name required'),
   email: z.string().email('Invalid email'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   stateId: z.string().min(2, 'State ID required'),
+  role: z.enum(['caseworker', 'supervisor']),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -22,7 +24,7 @@ export default function RegisterPage() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { stateId: DEFAULT_STATE_ID },
+    defaultValues: { stateId: DEFAULT_STATE_ID, role: 'caseworker' },
   });
 
   async function onSubmit(values: FormValues) {
@@ -30,15 +32,18 @@ export default function RegisterPage() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
       // Create user Firestore doc — active: false until approved by state_admin
+      const upperStateId = values.stateId.toUpperCase();
       await setDoc(doc(db, 'users', cred.user.uid), {
         email: values.email,
         displayName: values.displayName,
-        role: 'caseworker',
-        stateId: values.stateId.toUpperCase(),
+        role: values.role,
+        stateId: upperStateId,
         active: false,
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
       });
+      // Notify state admins — fire and forget, non-blocking
+      createRegistrationNotification(upperStateId, values.displayName, values.role).catch(() => undefined);
       setDone(true);
     } catch (e: unknown) {
       if (e instanceof Error && 'code' in e) {
@@ -143,6 +148,20 @@ export default function RegisterPage() {
               placeholder="NE"
             />
             {errors.stateId && <p className="text-xs text-red-500 mt-1">{errors.stateId.message}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+              I am requesting access as a
+            </label>
+            <select
+              id="role"
+              {...register('role')}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            >
+              <option value="caseworker">Caseworker</option>
+              <option value="supervisor">Supervisor</option>
+            </select>
           </div>
 
           {error && (

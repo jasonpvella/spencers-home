@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Core loop pre-walk complete. Notifications composite index added and deployed. Ready to run the full loop end-to-end: create profile → consent → publish (supervisor) → browse gallery (anonymous) → inquire → caseworker bell notification.
+**Current Focus:** UX gap pass complete. All core user-facing workflows now have proper self-service, visibility, and admin tooling. Platform is demo-ready for a state walkthrough.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -16,41 +16,36 @@
 - Zustand auth store ✅
 - **Auth flows:** Login + password reset + "forgot password" + caseworker self-service registration (pending approval) + family self-registration (auto-approved) + SSO (SAML/OIDC redirect, first-login provisioning) ✅
 - **RequireAuth:** loading state, inactive/pending-approval wall, role gate (family → `/`, caseworker → `/dashboard`) ✅
-- **AppShell:** sticky nav, role badge, sign-out, bell notification dropdown for caseworkers, Saved nav link for families, dynamic logo + brand color from state config ✅
+- **AppShell:** sticky nav, role badge (now links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config ✅
 - **Pages built:**
-  - LandingPage: public hero (blurred background + foreground portrait), 4 category cards, about/partnership section, live sponsor logos from Firestore ✅
-  - GalleryPage (at `/gallery`): video-first ProfileCards, `?category=` pre-filter from landing page, age/gender/video filters, result count, family sign-up banner for anonymous visitors ✅
-  - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, AdoptUSKids CSV export, AFCARS CSV export (state_admin+) ✅
+  - LandingPage: public hero, 4 category cards, about/partnership section, live sponsor logos ✅
+  - GalleryPage (`/gallery`): video-first ProfileCards, filters, family sign-up banner ✅
+  - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, CSV exports ✅
   - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section ✅
-  - ProfileDetailPage: status/consent badges, action buttons, consent record details, inline media, archive, inquiry list ✅
+  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons, inline media, archive, inquiry list, sibling group management ✅
   - ConsentFormPage: canvas draw signature, youth assent + ICWA conditional fields, Nebraska draft language ✅
-  - AdminUsersPage: list users by state, approve/deactivate, role change ✅
-  - RegisterPage: self-service caseworker account, pending approval flow ✅
-  - FamilyRegisterPage: self-service family account at `/register/family`, auto-approved, role: 'family' ✅
-  - StateConfigPage: branding (color + logo upload + custom domain), consent model, expiry days, youth assent age, ICWA toggle, PII rules, SSO config ✅
-  - FavoritesPage: grid of saved profiles for family users at `/favorites` ✅
+  - AdminUsersPage: list users by state, approve (with "notify them" reminder toast) / deactivate, role change, requested role shown on pending users ✅
+  - RegisterPage: self-service registration with role selector (caseworker or supervisor), pending approval flow, fires admin notification on submit ✅
+  - FamilyRegisterPage: self-service family account at `/register/family`, auto-approved ✅
+  - StateConfigPage: branding, consent model, SSO config ✅
+  - FavoritesPage: saved profiles for family users ✅
+  - **AccountSettingsPage (`/settings`):** display name update (Auth + Firestore) + password change (reauthenticate → updatePassword) ✅
 - **MediaUpload component:** react-dropzone, per-file progress bar, photo + video ✅
-- **InquiryModal:** public gallery CTA, writes to Firestore, increments inquiryCount, triggers caseworker notification ✅
-- **Toast system:** Radix Toast, success/error/info, wired into all mutations ✅
-- **Firestore security rules:** full audit complete, 5 critical bugs fixed, field-level update restrictions added, `ssoProviders` public read ✅
+- **InquiryModal:** public gallery CTA, writes to Firestore, triggers caseworker notification ✅
+- **Toast system:** Radix Toast, success/error/info ✅
+- **Firestore security rules:** full audit, notification sentinel rules for admin-targeted notifications ✅
 - **Firestore indexes:** children (status+age, status+gender, status+lastUpdatedAt) + notifications (userId+read+createdAt) ✅
 - **Storage rules deployed** ✅
-- **Emulator seed script:** `scripts/seed-emulator.ts` — 3 users, 4 child profiles, 2 consents, 2 inquiries, NE state config ✅
-- **Admin bootstrap script:** `scripts/bootstrap-admin.ts` — creates platform_admin + Test State in live Firebase ✅
-- **Platform admin live:** `jason@spencershome.org` / uid: `EoCy0vcpn8RIucC5bsRuOOhn3ak2` ✅
-- **Test State created:** `states/ts` ✅
-- **Route code splitting:** all 12 pages lazy-loaded; Firebase + vendor in separate cacheable chunks ✅
-- **Image lazy loading:** `loading="lazy"` + `decoding="async"` on gallery photos ✅
-- **HTML preconnect:** Firebase domains + Google Fonts preconnected in index.html ✅
-- **Brand:** Warm amber palette (CSS custom properties), Nunito font, warm off-white background ✅
-- **Hero image:** `public/hero.png` — live on landing page ✅
+- **Sibling group management:** bidirectional link/unlink via Firestore transaction; search-by-name picker on ProfileDetailPage; count shown on public profile ✅
+- **Emulator seed script, admin bootstrap script, platform admin live** ✅
 - TypeScript: 0 errors ✅
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Walk the core loop end-to-end (index is deployed — should be fully unblocked now)
+1. Walk the core loop end-to-end and test new UX flows (registration with role, approval notification bell, settings page, sibling linking)
 2. Strip SSO from login page and state config UI
 3. Polish pass (empty gallery state, mobile check, console errors)
+4. Deploy to live: `firebase deploy`
 
 ---
 
@@ -116,9 +111,43 @@ Favorites stored at `users/{userId}/favorites/{childId}`. Document contains `chi
 ### AdoptUSKids Export — Client-Side CSV (2026-04-09)
 Export button in Dashboard (state_admin / platform_admin only) generates CSV in-browser from the already-loaded `children` array. No backend call. Fields: first_name, age, gender (blank for undisclosed), interests (semicolon-delimited), bio. Filename includes ISO date. Button disabled when no published profiles exist.
 
+### Admin Notification Sentinel Pattern (2026-04-12)
+Registration notifications can't target specific admin userIds at registration time (newly registered user can't query other users per Firestore rules). Solution: write notification with `userId: 'admin:{stateId}'` sentinel. State admins subscribe to both their own userId and the sentinel via `where('userId', 'in', [...])`. Firestore rules updated to allow state_admin read/update of sentinel notifications for their state. `Notification` type extended with optional `type` ('inquiry' | 'registration') and `message` fields; inquiry-specific fields (`childId`, `childFirstName`, `inquirerName`) made optional.
+
+### Sibling Group Management — ProfileDetailPage, Not ProfileForm (2026-04-12)
+Sibling linking placed on ProfileDetailPage (not ProfileFormPage) because: (1) create mode has no childId yet — can't link before the profile exists; (2) sibling management is an administrative action, not part of the initial profile description workflow. `linkSibling` and `unlinkSibling` use Firestore transactions to keep both documents' `siblingGroupIds` arrays in sync atomically.
+
+### Consent "Expiring Soon" — Client-Side Computed (2026-04-12)
+No Firestore schema change. `isExpiringSoon` is computed on ProfileDetailPage from the already-loaded `consentRecord.expiresAt`: active consent expiring within 30 days shows amber "Expiring Soon" badge instead of green "Active". The `consentStatus` field in Firestore remains 'active' — only the display changes.
+
+### Email on Approval — Deferred (2026-04-12)
+Cloud Functions not initialized. Decision: defer until a real sending domain is set up (needed anyway for branded Auth emails). At that point, set up SendGrid + custom SMTP for all Auth emails in one pass. Interim workaround: approval toast reminds admin to notify the user manually.
+
 ---
 
 ## Historical Log
+
+### 2026-04-12 — UX gap pass: consent viewing, registration role, admin notifications, settings, sibling groups
+
+Systematic pass through 5 UX gaps identified during product review. All shipped in one session, 0 TypeScript errors throughout.
+
+**Gap 4 — Consent record viewing (ProfileDetailPage):**
+Added "Expiring Soon" amber badge (active consent within 30 days, client-side computed). Rendered signature image (`formData.signatureDataUrl` base64 PNG) in consent card. Added consent language version row.
+
+**Gap 2 — Role selector at registration:**
+RegisterPage now lets registrants choose Caseworker or Supervisor. Stored in Firestore as `role` (still `active: false`, still requires admin approval). Firestore `allow create` rule updated from `role == 'caseworker'` to `role in ['caseworker', 'supervisor']`. AdminUsersPage pending section shows "Requested: [role]" label so admin knows what was asked for.
+
+**Gap 5 — Admin notification on new registration:**
+Used sentinel pattern (`userId: 'admin:{stateId}'`) since newly registered users can't query other users. `createRegistrationNotification` written to notifications service. `subscribeToNotifications` updated to accept optional admin sentinel, uses Firestore `in` query. `useNotifications` hook passes sentinel for admin roles. Firestore rules updated. Bell notification click routes to `/admin/users` for registration type.
+
+**Gap 1 — Account settings page:**
+New `/settings` page (AccountSettingsPage). Display name updates both Firebase Auth profile and Firestore user doc. Password change uses `reauthenticateWithCredential` + `updatePassword` with typed error handling. User's name in AppShell nav now links to `/settings`.
+
+**Gap 3 — Sibling group management:**
+`linkSibling` and `unlinkSibling` added to children service using Firestore transactions for bidirectional consistency. Sibling Group card added to ProfileDetailPage: shows linked siblings with links + Remove buttons; search-by-name picker (min 2 chars, top 5 results). Public profile sibling notice updated to include group size.
+
+**Gap 6 — Email on approval — deferred:**
+Cloud Functions not set up. Decided not to initialize for v1 — volume too low to justify the infrastructure. Added "remember to notify them by email" reminder to approval toast in AdminUsersPage instead.
 
 ### 2026-04-12 — Notifications index added; core loop pre-walk complete
 

@@ -18,6 +18,7 @@ const ConsentFormPage = lazy(() => import('@/pages/ConsentFormPage'));
 const AdminUsersPage = lazy(() => import('@/pages/AdminUsersPage'));
 const StateConfigPage = lazy(() => import('@/pages/StateConfigPage'));
 const AdminSponsorsPage = lazy(() => import('@/pages/AdminSponsorsPage'));
+const AccountSettingsPage = lazy(() => import('@/pages/AccountSettingsPage'));
 
 const CASEWORKER_ROLES: UserRole[] = ['caseworker', 'supervisor', 'agency_admin', 'state_admin', 'platform_admin'];
 
@@ -120,6 +121,15 @@ function AppRoutes() {
                 <AdminSponsorsPage />
               </AppShell>
             </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <AuthShell>
+              <AccountSettingsPage />
+            </AuthShell>
           }
         />
 
