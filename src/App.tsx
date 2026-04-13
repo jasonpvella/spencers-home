@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthListener } from '@/hooks/useAuth';
 import RequireAuth from '@/components/shared/RequireAuth';
 import AppShell from '@/components/shared/AppShell';
+import StaffPreviewBar from '@/components/shared/StaffPreviewBar';
 import type { UserRole } from '@/types';
 import type { ReactNode } from 'react';
 
@@ -45,9 +46,9 @@ function AppRoutes() {
     <Suspense fallback={<PageFallback />}>
       <Routes>
         {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/gallery" element={<GalleryPage />} />
-        <Route path="/c/:stateId/:childId" element={<PublicProfilePage />} />
+        <Route path="/" element={<><StaffPreviewBar /><LandingPage /></>} />
+        <Route path="/gallery" element={<><StaffPreviewBar /><GalleryPage /></>} />
+        <Route path="/c/:stateId/:childId" element={<><StaffPreviewBar /><PublicProfilePage /></>} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 

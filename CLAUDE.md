@@ -37,6 +37,7 @@
 3. Append a dated entry to `## Historical Log` summarizing the session delta.
 4. If scope, features, or requirements changed, update the relevant phase in `docs/PRD.md` and note the change in the log entry.
 5. Stage all changed files and push to GitHub (`git add -A && git commit -m "..." && git push`).
+6. Deploy to Firebase Hosting (`firebase deploy --only hosting`) to refresh the live site.
 
 ---
 

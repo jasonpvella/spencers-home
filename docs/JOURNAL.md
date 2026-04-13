@@ -46,6 +46,7 @@
 2. Strip SSO from login page and state config UI
 3. Empty gallery state polish + console error audit
 4. First demo prep: decide which state admin account to use for walkthrough
+5. Consider `pt-10` on public pages if staff preview bar overlaps hero content during walkthrough
 
 ---
 
@@ -126,6 +127,14 @@ Cloud Functions not initialized. Decision: defer until a real sending domain is 
 ---
 
 ## Historical Log
+
+### 2026-04-12 — Staff preview bar on public pages
+
+Added `StaffPreviewBar` component for logged-in staff browsing public pages (`/`, `/gallery`, `/c/:stateId/:childId`). Fixed 40px bar pinned to top of viewport (`position: fixed, z-50`) with `bg-brand-900` background: "Viewing public site" left, "Back to Dashboard" link right. Renders only for the 5 staff roles; returns `null` while auth is loading and for anonymous/family visitors. No changes to AppShell, public page layouts, or staff route wrapping. Injected via fragment in each public `<Route>` element in `App.tsx`.
+
+Also updated Save Project protocol: now deploys to Firebase Hosting (`firebase deploy --only hosting`) as step 6, so the live site refreshes every session.
+
+---
 
 ### 2026-04-12 — Mobile polish: hamburger nav, gallery scroll persistence, responsive admin pages
 
