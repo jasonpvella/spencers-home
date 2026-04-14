@@ -43,13 +43,16 @@
 - TypeScript: 0 errors ✅
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
+**What's done (updated 2026-04-13):**
+- **`submitInquiry` Cloud Function deployed to production** ✅ — inquiry form on live site is fully operational
+- **Firestore composite indexes deployed for flat inquiries:** `caseworkerId + submittedAt` and `caseworkerId + replyStatus` ✅
+- **Node.js runtime upgraded: 20 → 22** ✅ — ahead of the 2026-04-30 Node 20 deprecation deadline
+
 **Next session — in order:**
-1. Deploy `submitInquiry` Cloud Function to production (`firebase deploy --only functions`) — inquiry form on live site won't work until this is done
-2. Add Firestore composite index for flat inquiry queries: `stateId` + `submittedAt` and `caseworkerId` + `submittedAt` (needed for production — emulator doesn't enforce)
-3. Walk the core loop end-to-end on both desktop and mobile
-4. Strip SSO from login page and state config UI
-5. Empty gallery state polish + console error audit
-6. First demo prep: decide which state admin account to use for walkthrough
+1. Walk the core loop end-to-end on both desktop and mobile
+2. Strip SSO from login page and state config UI
+3. Empty gallery state polish + console error audit
+4. First demo prep: decide which state admin account to use for walkthrough
 
 ---
 
@@ -128,11 +131,17 @@ No Firestore schema change. `isExpiringSoon` is computed on ProfileDetailPage fr
 Cloud Functions not initialized. Decision: defer until a real sending domain is set up (needed anyway for branded Auth emails). At that point, set up SendGrid + custom SMTP for all Auth emails in one pass. Interim workaround: approval toast reminds admin to notify the user manually.
 
 ### Admin-Invited Users — Cloud Function + Resend (2026-04-13)
-State admin can create user accounts directly via "Invite user" modal on AdminUsersPage. Flow: admin fills name/email/role → `inviteUser` Cloud Function (Firebase Functions v2, us-central1) creates Auth account, writes Firestore user doc (`active: true`, `createdBy` caller uid), writes audit log entry (`user_created`), calls `admin.auth().generatePasswordResetLink()` for the setup URL, sends a custom invitation email via Resend using `onboarding@resend.dev`. Email copy reads as onboarding ("You've been added to Spencer's Home") not password recovery. RESEND_API_KEY stored in Google Cloud Secret Manager via `firebase functions:secrets:set`. Functions emulator wired to port 5001. Node 20 deprecation warning noted — upgrade needed before 2026-10-30.
+State admin can create user accounts directly via "Invite user" modal on AdminUsersPage. Flow: admin fills name/email/role → `inviteUser` Cloud Function (Firebase Functions v2, us-central1) creates Auth account, writes Firestore user doc (`active: true`, `createdBy` caller uid), writes audit log entry (`user_created`), calls `admin.auth().generatePasswordResetLink()` for the setup URL, sends a custom invitation email via Resend using `onboarding@resend.dev`. Email copy reads as onboarding ("You've been added to Spencer's Home") not password recovery. RESEND_API_KEY stored in Google Cloud Secret Manager via `firebase functions:secrets:set`. Functions emulator wired to port 5001. Node 20 deprecation warning resolved: upgraded to Node 22 on 2026-04-13.
 
 ---
 
 ## Historical Log
+
+### 2026-04-13 — Production deploy: submitInquiry function + inquiry indexes + Node.js 22
+
+Deployed `submitInquiry` Cloud Function to production — inquiry form on the live site was broken until this deploy. Added two Firestore composite indexes for flat inquiry queries: `caseworkerId + submittedAt ASC` (caseworker list view) and `caseworkerId + replyStatus` (pending count). Note: the pending count query uses two `where` clauses with no `orderBy`, so the index is `caseworkerId + replyStatus`, not `replyStatus + submittedAt` as noted in prior session planning. Upgraded Cloud Functions Node.js runtime from 20 to 22 (`functions/package.json` `engines.node`) ahead of the 2026-04-30 deprecation deadline.
+
+---
 
 ### 2026-04-13 — Inquiry management system: flat collection + Cloud Function + InquiriesPage
 
@@ -158,7 +167,7 @@ Flat inquiry collection: `create: false` (Admin SDK only), `read`: stateId + rol
 
 TypeScript: 0 errors (frontend + functions).
 
-**Pending before production use:** Deploy `submitInquiry` Cloud Function (`firebase deploy --only functions`). Add Firestore composite indexes for flat inquiry queries.
+**Production deployed 2026-04-13:** `submitInquiry` Cloud Function live. Composite indexes deployed: `caseworkerId + submittedAt`, `caseworkerId + replyStatus`. Node.js runtime upgraded 20 → 22.
 
 ---
 

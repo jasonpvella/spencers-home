@@ -32,7 +32,24 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "lastUpdatedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "inquiries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseworkerId", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "inquiries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseworkerId", "order": "ASCENDING" },
+        { "fieldPath": "replyStatus", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
 }
+
