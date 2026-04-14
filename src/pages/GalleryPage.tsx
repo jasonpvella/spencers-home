@@ -76,8 +76,8 @@ export default function GalleryPage() {
   const filtered = useMemo(() => {
     return children.filter((child) => {
       // Category pre-filter from landing page
-      if (category === 'individuals' && child.siblingGroupIds && child.siblingGroupIds.length > 0) return false;
-      if (category === 'siblings' && (!child.siblingGroupIds || child.siblingGroupIds.length === 0)) return false;
+      if (category === 'individuals' && child.gender === 'sibling_group') return false;
+      if (category === 'siblings' && child.gender !== 'sibling_group') return false;
       if (category === 'boys' && child.gender !== 'male') return false;
       if (category === 'girls' && child.gender !== 'female') return false;
       // Manual filters

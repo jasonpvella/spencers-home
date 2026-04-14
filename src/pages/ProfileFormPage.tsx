@@ -13,9 +13,10 @@ import MediaUpload from '@/components/profile/MediaUpload';
 import type { Gender } from '@/types';
 
 const schema = z.object({
-  firstName: z.string().min(1, 'First name required').max(50),
+  firstName: z.string().min(1, 'First name required').max(200),
   ageAtListing: z.coerce.number().int().min(0).max(21),
-  gender: z.enum(['male', 'female', 'nonbinary', 'undisclosed'] as const),
+  gender: z.enum(['male', 'female', 'nonbinary', 'undisclosed', 'sibling_group'] as const),
+  ages: z.string().max(200).optional(),
   bio: z.string().max(1000).optional(),
   interests: z.array(z.string()).min(0),
   icwaFlag: z.boolean(),
@@ -56,6 +57,7 @@ export default function ProfileFormPage({ mode }: Props) {
       firstName: '',
       ageAtListing: 0,
       gender: 'undisclosed' as Gender,
+      ages: '',
       bio: '',
       interests: [],
       icwaFlag: false,
@@ -63,6 +65,8 @@ export default function ProfileFormPage({ mode }: Props) {
     },
   });
 
+  const gender = watch('gender');
+  const isSiblingGroup = gender === 'sibling_group';
   const icwaFlag = watch('icwaFlag');
   const bioValue = watch('bio') ?? '';
   const piiWarnings = checkForPii(bioValue);
@@ -73,6 +77,7 @@ export default function ProfileFormPage({ mode }: Props) {
         firstName: child.firstName,
         ageAtListing: child.ageAtListing,
         gender: child.gender,
+        ages: child.ages ?? '',
         bio: child.bio ?? '',
         interests: child.interests,
         icwaFlag: child.icwaFlag,
@@ -86,10 +91,14 @@ export default function ProfileFormPage({ mode }: Props) {
       toast('Your account is missing a state assignment. Contact a platform admin.', 'error');
       return;
     }
+
+    const isGroup = values.gender === 'sibling_group';
+
     const payload = {
       firstName: values.firstName,
-      ageAtListing: values.ageAtListing,
+      ageAtListing: isGroup ? 0 : values.ageAtListing,
       gender: values.gender,
+      ...(isGroup && values.ages ? { ages: values.ages } : {}),
       bio: values.bio ?? '',
       interests: values.interests,
       icwaFlag: values.icwaFlag,
@@ -135,27 +144,76 @@ export default function ProfileFormPage({ mode }: Props) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Name + Age + Gender */}
+        {/* Basic information */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <h2 className="text-sm font-medium text-gray-700">Basic information</h2>
 
+          {/* Gender — shown first so sibling_group selection reshapes the rest of the form */}
+          <div>
+            <label className="block text-sm text-gray-700 mb-1" htmlFor="gender">
+              Profile type
+            </label>
+            <select
+              id="gender"
+              {...register('gender')}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            >
+              {GENDER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* First name / Names */}
           <div>
             <label className="block text-sm text-gray-700 mb-1" htmlFor="firstName">
-              First name <span className="text-red-500">*</span>
+              {isSiblingGroup ? 'First names' : 'First name'}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               id="firstName"
               type="text"
               {...register('firstName')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              placeholder="Child's first name only"
+              placeholder={
+                isSiblingGroup
+                  ? 'e.g. Emma, Liam, and Sofia'
+                  : "Child's first name only"
+              }
             />
+            {isSiblingGroup && (
+              <p className="text-xs text-gray-400 mt-1">
+                Separate names with a comma, and use "and" before the last name — e.g. Emma, Liam, and Sofia.
+              </p>
+            )}
             {errors.firstName && (
               <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Age at listing (individuals only) or Ages (sibling groups) */}
+          {isSiblingGroup ? (
+            <div>
+              <label className="block text-sm text-gray-700 mb-1" htmlFor="ages">
+                Ages
+              </label>
+              <input
+                id="ages"
+                type="text"
+                {...register('ages')}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="e.g. 7, 9, 12"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                If more than one child, separate each age with a comma.
+              </p>
+              {errors.ages && (
+                <p className="text-xs text-red-500 mt-1">{errors.ages.message}</p>
+              )}
+            </div>
+          ) : (
             <div>
               <label className="block text-sm text-gray-700 mb-1" htmlFor="ageAtListing">
                 Age at listing <span className="text-red-500">*</span>
@@ -172,39 +230,28 @@ export default function ProfileFormPage({ mode }: Props) {
                 <p className="text-xs text-red-500 mt-1">{errors.ageAtListing.message}</p>
               )}
             </div>
-
-            <div>
-              <label className="block text-sm text-gray-700 mb-1" htmlFor="gender">
-                Gender
-              </label>
-              <select
-                id="gender"
-                {...register('gender')}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-              >
-                {GENDER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Bio */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-          <h2 className="text-sm font-medium text-gray-700">Bio</h2>
+          <h2 className="text-sm font-medium text-gray-700">
+            {isSiblingGroup ? 'About this sibling group' : 'Bio'}
+          </h2>
           <div>
             <label className="block text-sm text-gray-700 mb-1" htmlFor="bio">
-              About this child
+              {isSiblingGroup ? 'Group description' : 'About this child'}
             </label>
             <textarea
               id="bio"
               rows={5}
               {...register('bio')}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-              placeholder="Write in first or third person. No last name, school name, location, or case history."
+              placeholder={
+                isSiblingGroup
+                  ? 'Write about the group as a whole. No last names, school names, location, or case history.'
+                  : 'Write in first or third person. No last name, school name, location, or case history.'
+              }
             />
             {piiWarnings.length > 0 && (
               <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 space-y-0.5">
@@ -227,7 +274,9 @@ export default function ProfileFormPage({ mode }: Props) {
 
         {/* Interests */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-          <h2 className="text-sm font-medium text-gray-700">Interests</h2>
+          <h2 className="text-sm font-medium text-gray-700">
+            {isSiblingGroup ? 'Shared interests / traits' : 'Interests'}
+          </h2>
           <Controller
             name="interests"
             control={control}

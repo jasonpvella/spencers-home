@@ -149,7 +149,11 @@ export default function PublicProfilePage() {
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
           <div className="flex items-baseline gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{child.firstName}</h1>
-            <span className="text-gray-400 text-sm">{child.ageAtListing} years old</span>
+            <span className="text-gray-400 text-sm">
+              {child.gender === 'sibling_group'
+                ? (child.ages ? `Ages: ${child.ages}` : 'Sibling group')
+                : `${child.ageAtListing} years old`}
+            </span>
           </div>
 
           {child.bio && (
@@ -169,9 +173,9 @@ export default function PublicProfilePage() {
             </div>
           )}
 
-          {child.siblingGroupIds && child.siblingGroupIds.length > 0 && (
+          {child.gender === 'sibling_group' && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              {child.firstName} is part of a sibling group of {child.siblingGroupIds.length + 1} and will need to be placed together.
+              This sibling group will need to be placed together.
             </p>
           )}
         </div>

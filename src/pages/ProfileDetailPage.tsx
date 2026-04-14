@@ -6,9 +6,8 @@ import { useToast } from '@/components/shared/Toaster';
 import { EDITABLE_STATUSES } from '@/config/constants';
 import { getConsent } from '@/services/consent';
 import { getInquiries } from '@/services/inquiries';
-import { listChildren, linkSibling, unlinkSibling } from '@/services/children';
-import { useState, useEffect, useRef } from 'react';
-import type { ProfileStatus, ConsentRecord, Inquiry, ChildProfile } from '@/types';
+import { useState, useEffect } from 'react';
+import type { ProfileStatus, ConsentRecord, Inquiry } from '@/types';
 
 const STATUS_LABEL: Record<ProfileStatus, string> = {
   draft: 'Draft',
@@ -49,10 +48,6 @@ export default function ProfileDetailPage() {
   const [consentRecord, setConsentRecord] = useState<ConsentRecord | null>(null);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [inquiriesLoading, setInquiriesLoading] = useState(false);
-  const [allChildren, setAllChildren] = useState<ChildProfile[]>([]);
-  const [siblingSearch, setSiblingSearch] = useState('');
-  const [siblingUpdating, setSiblingUpdating] = useState(false);
-  const allChildrenLoaded = useRef(false);
 
   useEffect(() => {
     if (child?.consentId && stateId) {
@@ -78,14 +73,6 @@ export default function ProfileDetailPage() {
         .finally(() => setInquiriesLoading(false));
     }
   }, [childId, stateId, child?.inquiryCount]);
-
-  useEffect(() => {
-    if (!stateId || !child || allChildrenLoaded.current) return;
-    allChildrenLoaded.current = true;
-    listChildren(stateId)
-      .then(setAllChildren)
-      .catch((e: unknown) => console.error('[ProfileDetailPage] Failed to load children for sibling picker:', e));
-  }, [stateId, child]);
 
   async function handlePublish() {
     if (!childId) return;
@@ -118,35 +105,6 @@ export default function ProfileDetailPage() {
       reload();
     } catch {
       toast('Failed to archive profile', 'error');
-    }
-  }
-
-  async function handleLinkSibling(siblingId: string, siblingName: string) {
-    if (!childId || !stateId) return;
-    setSiblingUpdating(true);
-    try {
-      await linkSibling(stateId, childId, siblingId);
-      setSiblingSearch('');
-      reload();
-      toast(`Linked with ${siblingName}`, 'success');
-    } catch {
-      toast('Failed to link sibling', 'error');
-    } finally {
-      setSiblingUpdating(false);
-    }
-  }
-
-  async function handleUnlinkSibling(siblingId: string, siblingName: string) {
-    if (!childId || !stateId) return;
-    setSiblingUpdating(true);
-    try {
-      await unlinkSibling(stateId, childId, siblingId);
-      reload();
-      toast(`Unlinked from ${siblingName}`, 'info');
-    } catch {
-      toast('Failed to unlink sibling', 'error');
-    } finally {
-      setSiblingUpdating(false);
     }
   }
 
@@ -191,7 +149,9 @@ export default function ProfileDetailPage() {
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">{child.firstName}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {child.ageAtListing} years old · {child.gender !== 'undisclosed' ? child.gender : ''}
+            {child.gender === 'sibling_group'
+              ? `Sibling group · Ages: ${child.ages ?? '—'}`
+              : `${child.ageAtListing} years old${child.gender !== 'undisclosed' ? ` · ${child.gender}` : ''}`}
           </p>
         </div>
 
@@ -435,82 +395,6 @@ export default function ProfileDetailPage() {
         </div>
       )}
 
-      {/* Sibling Group */}
-      {(() => {
-        const linkedIds = child.siblingGroupIds ?? [];
-        const linkedProfiles = allChildren.filter((c) => linkedIds.includes(c.id));
-        const searchTerm = siblingSearch.trim().toLowerCase();
-        const searchResults = searchTerm.length >= 2
-          ? allChildren.filter(
-              (c) =>
-                c.id !== childId &&
-                !linkedIds.includes(c.id) &&
-                c.firstName.toLowerCase().includes(searchTerm)
-            )
-          : [];
-
-        return (
-          <div className="mt-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">
-                Sibling Group {linkedProfiles.length > 0 ? `(${linkedProfiles.length + 1})` : ''}
-              </p>
-
-              {linkedProfiles.length > 0 && (
-                <ul className="space-y-2 mb-4">
-                  {linkedProfiles.map((sibling) => (
-                    <li key={sibling.id} className="flex items-center justify-between">
-                      <Link
-                        to={`/profile/${sibling.id}`}
-                        className="text-sm text-brand-600 hover:underline"
-                      >
-                        {sibling.firstName} · {sibling.ageAtListing} yrs
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleUnlinkSibling(sibling.id, sibling.firstName)}
-                        disabled={siblingUpdating}
-                        className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div>
-                <input
-                  type="text"
-                  value={siblingSearch}
-                  onChange={(e) => setSiblingSearch(e.target.value)}
-                  placeholder="Search by first name to add a sibling…"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                {searchResults.length > 0 && (
-                  <ul className="mt-2 border border-gray-200 rounded-lg overflow-hidden divide-y divide-gray-100">
-                    {searchResults.slice(0, 5).map((result) => (
-                      <li key={result.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleLinkSibling(result.id, result.firstName)}
-                          disabled={siblingUpdating}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition-colors disabled:opacity-50"
-                        >
-                          {result.firstName} · {result.ageAtListing} yrs
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {searchTerm.length >= 2 && searchResults.length === 0 && (
-                  <p className="text-xs text-gray-400 mt-2">No matching profiles found.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }

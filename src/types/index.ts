@@ -2,7 +2,7 @@ import type { Timestamp } from 'firebase/firestore';
 
 // ─── Profile & Status ─────────────────────────────────────────────────────────
 
-export type Gender = 'male' | 'female' | 'nonbinary' | 'undisclosed';
+export type Gender = 'male' | 'female' | 'nonbinary' | 'undisclosed' | 'sibling_group';
 
 export type ProfileStatus =
   | 'draft'
@@ -42,7 +42,7 @@ export interface ChildProfile {
   gender: Gender;
   bio: string;
   interests: string[];
-  siblingGroupIds?: string[];
+  ages?: string;
   videoUrl?: string;
   photoUrls: string[];
   status: ProfileStatus;

@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Admin-invited user flow shipped. State admin can now create user accounts directly and send a branded invitation email — no more self-registration + approval loop for staff onboarding.
+**Current Focus:** Sibling group model redesigned — siblings are now a single profile type (driven by `gender: 'sibling_group'`) rather than cross-linked individual profiles. "Home" link added to the mobile hamburger menu for all signed-in roles.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -16,13 +16,13 @@
 - Zustand auth store ✅
 - **Auth flows:** Login + password reset + "forgot password" + caseworker self-service registration (pending approval) + family self-registration (auto-approved) + SSO (SAML/OIDC redirect, first-login provisioning) ✅
 - **RequireAuth:** loading state, inactive/pending-approval wall, role gate (family → `/`, caseworker → `/dashboard`) ✅
-- **AppShell:** sticky nav with hamburger menu on mobile (< 768px), role badge (links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config ✅
+- **AppShell:** sticky nav with hamburger menu on mobile (< 768px), role badge (links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config; "Home" link at top of hamburger for all roles ✅
 - **Pages built:**
-  - LandingPage: public hero, 4 category cards, about/partnership section, live sponsor logos ✅
-  - GalleryPage (`/gallery`): video-first ProfileCards, filters (persisted to sessionStorage), scroll position restored on back-navigation ✅
+  - LandingPage: public hero, 4 category cards (Individuals, Siblings, Boys, Girls), about/partnership section, live sponsor logos ✅
+  - GalleryPage (`/gallery`): video-first ProfileCards, filters (persisted to sessionStorage), scroll position restored on back-navigation; siblings filter uses `gender === 'sibling_group'` ✅
   - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, CSV exports — mobile-responsive header ✅
-  - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section ✅
-  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons (mobile-stacked), inline media, archive, inquiry list, sibling group management ✅
+  - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section; sibling group mode (driven by gender selector) with comma-separated names/ages, relabeled fields ✅
+  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons (mobile-stacked), inline media, archive, inquiry list ✅
   - ConsentFormPage: canvas draw signature, youth assent + ICWA conditional fields, Nebraska draft language ✅
   - AdminUsersPage: list users by state, approve / deactivate, role change, requested role shown on pending users — mobile-stacked rows; **Invite user** button + modal (name/email/role → Cloud Function → invitation email) ✅
   - RegisterPage: self-service registration with role selector (caseworker or supervisor), pending approval flow, fires admin notification on submit ✅
@@ -36,7 +36,7 @@
 - **Firestore security rules:** full audit, notification sentinel rules for admin-targeted notifications ✅
 - **Firestore indexes:** children (status+age, status+gender, status+lastUpdatedAt) + notifications (userId+read+createdAt) ✅
 - **Storage rules deployed** ✅
-- **Sibling group management:** bidirectional link/unlink via Firestore transaction; search-by-name picker on ProfileDetailPage; count shown on public profile ✅
+- **Sibling group model:** single-profile model — `gender: 'sibling_group'` drives category filtering, comma-separated names/ages embedded in one Firestore doc, old cross-link system removed ✅
 - **Emulator seed script, admin bootstrap script, platform admin live** ✅
 - TypeScript: 0 errors ✅
 - **Deployed:** https://spencers-home-dev.web.app ✅
@@ -116,8 +116,8 @@ Export button in Dashboard (state_admin / platform_admin only) generates CSV in-
 ### Admin Notification Sentinel Pattern (2026-04-12)
 Registration notifications can't target specific admin userIds at registration time (newly registered user can't query other users per Firestore rules). Solution: write notification with `userId: 'admin:{stateId}'` sentinel. State admins subscribe to both their own userId and the sentinel via `where('userId', 'in', [...])`. Firestore rules updated to allow state_admin read/update of sentinel notifications for their state. `Notification` type extended with optional `type` ('inquiry' | 'registration') and `message` fields; inquiry-specific fields (`childId`, `childFirstName`, `inquirerName`) made optional.
 
-### Sibling Group Management — ProfileDetailPage, Not ProfileForm (2026-04-12)
-Sibling linking placed on ProfileDetailPage (not ProfileFormPage) because: (1) create mode has no childId yet — can't link before the profile exists; (2) sibling management is an administrative action, not part of the initial profile description workflow. `linkSibling` and `unlinkSibling` use Firestore transactions to keep both documents' `siblingGroupIds` arrays in sync atomically.
+### Sibling Group Model — Single Profile, Not Cross-Linked Documents (2026-04-13)
+Sibling groups are represented as a single `ChildProfile` document with `gender: 'sibling_group'`. First names and ages are comma-separated strings (`firstName`, `ages` fields). The old cross-link model (`siblingGroupIds[]` arrays, `linkSibling`/`unlinkSibling` Firestore transactions) is removed. Rationale: a child in a sibling group is never also listed as an individual — the group is the unit of placement, so a single profile is the correct model. Gallery filter (`category=siblings`) checks `child.gender === 'sibling_group'`; `category=individuals` excludes that value. Nonbinary and undisclosed children appear under individuals and "meet our kids" naturally. The `ages` field is optional and only meaningful for sibling group profiles.
 
 ### Consent "Expiring Soon" — Client-Side Computed (2026-04-12)
 No Firestore schema change. `isExpiringSoon` is computed on ProfileDetailPage from the already-loaded `consentRecord.expiresAt`: active consent expiring within 30 days shows amber "Expiring Soon" badge instead of green "Active". The `consentStatus` field in Firestore remains 'active' — only the display changes.
@@ -131,6 +131,22 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-13 — Sibling group model redesign + hamburger Home link
+
+**Sibling group model replaced:**
+Removed the cross-linked individual profile model (`siblingGroupIds[]`, `linkSibling`, `unlinkSibling`). A sibling group is now a single `ChildProfile` document where `gender === 'sibling_group'`. `Gender` type extended with `'sibling_group'`; `ages?: string` field added to `ChildProfile`; `siblingGroupIds` removed. `GENDER_OPTIONS` in constants gets a "Sibling group" entry, which drives the entire form behavior.
+
+**ProfileFormPage:** Gender selector (now labeled "Profile type") shown first. When "Sibling group" is selected: "First name" → "First names" with comma/and hint (e.g. Emma, Liam, and Sofia); age field replaced by "Ages" text input with comma hint; bio and interests sections relabeled. Works in both create and edit mode.
+
+**Gallery/display:** `GalleryPage` `category=siblings` filter now checks `gender === 'sibling_group'`; `category=individuals` excludes sibling group profiles. `ProfileCard` shows comma-separated ages and an amber "Sibling group" badge for group profiles. `PublicProfilePage` shows ages from `ages` field and a placement-together notice. `ProfileDetailPage` header shows "Sibling group · Ages: …" for group profiles; sibling picker section removed entirely.
+
+**Hamburger Home link:**
+Added "Home" as the first item in the mobile hamburger menu dropdown in `AppShell`, visible to all signed-in roles. Uses `NavLink` with `end` prop so it only activates on the exact `/` route.
+
+TypeScript: 0 errors.
+
+---
 
 ### 2026-04-13 — Admin-invited user flow: Cloud Functions + Resend
 

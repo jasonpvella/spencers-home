@@ -49,8 +49,17 @@ export default function ProfileCard({ child, stateId }: Props) {
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-baseline justify-between mb-2">
           <h2 className="text-lg font-semibold text-gray-900">{child.firstName}</h2>
-          <span className="text-sm text-gray-400">{child.ageAtListing} years old</span>
+          <span className="text-sm text-gray-400">
+            {child.gender === 'sibling_group'
+              ? (child.ages ? `Ages: ${child.ages}` : 'Sibling group')
+              : `${child.ageAtListing} years old`}
+          </span>
         </div>
+        {child.gender === 'sibling_group' && (
+          <span className="inline-block text-xs bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 rounded-full mb-2">
+            Sibling group
+          </span>
+        )}
 
         {child.bio && (
           <p className="text-sm text-gray-600 leading-relaxed line-clamp-3 mb-3">{child.bio}</p>

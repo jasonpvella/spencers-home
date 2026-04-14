@@ -234,6 +234,7 @@ export default function AppShell({ children }: Props) {
 
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-20">
+                  <NavLink to="/" className={mobileNavLinkClass} onClick={closeMenu} end>Home</NavLink>
                   <NavLink to="/dashboard" className={mobileNavLinkClass} onClick={closeMenu}>Dashboard</NavLink>
                   <NavLink to="/gallery" className={mobileNavLinkClass} onClick={closeMenu}>Gallery</NavLink>
                   {user && isAdmin && (

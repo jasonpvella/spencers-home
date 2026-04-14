@@ -44,4 +44,5 @@ export const GENDER_OPTIONS = [
   { value: 'female', label: 'Female' },
   { value: 'nonbinary', label: 'Non-binary' },
   { value: 'undisclosed', label: 'Prefer not to say' },
+  { value: 'sibling_group', label: 'Sibling group' },
 ] as const;
