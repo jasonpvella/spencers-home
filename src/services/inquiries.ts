@@ -7,8 +7,8 @@ import {
   orderBy,
   where,
   updateDoc,
-  Unsubscribe,
 } from 'firebase/firestore';
+import type { Unsubscribe } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import type { Inquiry, ReplyStatus, UserRole } from '@/types';
 

@@ -58,9 +58,9 @@ export default function InquiriesPage() {
     setSavingId(inquiry.id);
     try {
       await updateInquiryStatus(stateId, inquiry.id, replyStatus);
-      toast({ type: 'success', message: 'Status updated.' });
+      toast('Status updated.', 'success');
     } catch {
-      toast({ type: 'error', message: 'Failed to update status.' });
+      toast('Failed to update status.', 'error');
     } finally {
       setSavingId(null);
     }
@@ -72,9 +72,9 @@ export default function InquiriesPage() {
     try {
       await updateInquiryStatus(stateId, inquiry.id, inquiry.replyStatus, notesDraft);
       setEditingId(null);
-      toast({ type: 'success', message: 'Note saved.' });
+      toast('Note saved.', 'success');
     } catch {
-      toast({ type: 'error', message: 'Failed to save note.' });
+      toast('Failed to save note.', 'error');
     } finally {
       setSavingId(null);
     }
