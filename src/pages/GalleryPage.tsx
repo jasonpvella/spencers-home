@@ -215,9 +215,9 @@ export default function GalleryPage() {
             </button>
           </p>
         )}
-        <div className="columns-1 sm:columns-2 lg:columns-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filtered.map((child) => (
-            <div key={child.id} className="break-inside-avoid mb-6">
+            <div key={child.id}>
               <ProfileCard child={child} stateId={DEFAULT_STATE_ID} />
             </div>
           ))}

@@ -22,6 +22,7 @@ const schema = z.object({
   firstNameOnly: z.boolean(),
   noSchoolNames: z.boolean(),
   noLocationIdentifiers: z.boolean(),
+  caseworkerPoolMode: z.boolean(),
   ssoEnabled: z.boolean(),
   ssoProviderType: z.enum(['saml', 'oidc'] as const),
   ssoProviderId: z.string(),
@@ -42,6 +43,7 @@ const DEFAULT_VALUES: FormValues = {
   firstNameOnly: true,
   noSchoolNames: true,
   noLocationIdentifiers: true,
+  caseworkerPoolMode: false,
   ssoEnabled: false,
   ssoProviderType: 'saml' as const,
   ssoProviderId: '',
@@ -86,6 +88,7 @@ export default function StateConfigPage() {
           firstNameOnly: config?.piiRules?.firstNameOnly ?? true,
           noSchoolNames: config?.piiRules?.noSchoolNames ?? true,
           noLocationIdentifiers: config?.piiRules?.noLocationIdentifiers ?? true,
+          caseworkerPoolMode: config?.caseworkerProfileVisibility === 'pool',
           ssoEnabled: sso?.enabled ?? false,
           ssoProviderType: sso?.providerType ?? 'saml',
           ssoProviderId: sso?.providerId ?? '',
@@ -143,6 +146,7 @@ export default function StateConfigPage() {
           noLocationIdentifiers: values.noLocationIdentifiers,
           additionalRules: existing?.piiRules?.additionalRules ?? [],
         },
+        caseworkerProfileVisibility: values.caseworkerPoolMode ? 'pool' : 'own',
       };
       await saveStateConfig(stateId, config, userId);
       setExisting(config);
@@ -385,6 +389,28 @@ export default function StateConfigPage() {
               className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
             />
             <span className="text-sm text-gray-700">No location identifiers (street, neighborhood, city)</span>
+          </label>
+        </div>
+
+        {/* Caseworker access model */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <h2 className="text-sm font-medium text-gray-700">Caseworker access model</h2>
+          <p className="text-xs text-gray-400">
+            Controls which profiles caseworkers can see and edit in the dashboard. Supervisors and
+            admins always have full access regardless of this setting.
+          </p>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              {...register('caseworkerPoolMode')}
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+            />
+            <span className="text-sm text-gray-700">
+              Pool mode — caseworkers can see and edit all profiles in the state
+              <span className="block text-xs text-gray-400 mt-0.5">
+                When unchecked (default), each caseworker only sees profiles assigned to them.
+              </span>
+            </span>
           </label>
         </div>
 

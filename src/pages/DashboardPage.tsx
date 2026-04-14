@@ -1,9 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useAllChildren } from '@/hooks/useChildren';
 import { useExpiringConsents } from '@/hooks/useConsent';
-import type { ChildProfile } from '@/types';
+import { getStateConfig } from '@/services/stateConfig';
+import { listUsersByState } from '@/services/users';
+import { reassignChild } from '@/services/children';
+import { useToast } from '@/components/shared/Toaster';
+import type { ChildProfile, User } from '@/types';
 
 // AFCARS sex codes: 1=Male, 2=Female, 99=Unknown/Other
 function afcarsSex(gender: ChildProfile['gender']): string {
@@ -107,12 +111,57 @@ function exportAdoptUSKidsCSV(children: ChildProfile[]) {
   URL.revokeObjectURL(url);
 }
 
+const SUPERVISOR_ROLES = ['supervisor', 'agency_admin', 'state_admin', 'platform_admin'] as const;
+type SupervisorRole = typeof SUPERVISOR_ROLES[number];
+
+function isSupervisorRole(role: string | undefined): role is SupervisorRole {
+  return SUPERVISOR_ROLES.includes(role as SupervisorRole);
+}
+
 export default function DashboardPage() {
   const user = useCurrentUser();
   const stateId = user?.stateId ?? '';
-  const { children, loading } = useAllChildren(stateId);
+  const userId = user?.id ?? '';
+  const { toast } = useToast();
+
+  // Load state config to determine caseworker visibility mode.
+  // Defaults to 'own' (most restrictive) until config resolves.
+  const [visibilityMode, setVisibilityMode] = useState<'own' | 'pool'>('own');
+  useEffect(() => {
+    if (!stateId) return;
+    getStateConfig(stateId)
+      .then((config) => setVisibilityMode(config?.caseworkerProfileVisibility ?? 'own'))
+      .catch(() => {}); // non-critical — safe default is 'own'
+  }, [stateId]);
+
+  // Caseworkers in 'own' mode only see their own profiles.
+  // Supervisor+ see everything regardless of mode.
+  const isCaseworker = user?.role === 'caseworker';
+  const ownedByUid = isCaseworker && visibilityMode === 'own' ? userId : undefined;
+
+  const { children, loading } = useAllChildren(stateId, ownedByUid);
   const { consents: expiringConsents } = useExpiringConsents(stateId, 30);
   const [search, setSearch] = useState('');
+
+  // Caseworker list for the reassignment dropdown — only loaded for supervisors/admins.
+  const canReassign = isSupervisorRole(user?.role);
+  const [caseworkers, setCaseworkers] = useState<User[]>([]);
+  useEffect(() => {
+    if (!stateId || !canReassign) return;
+    listUsersByState(stateId)
+      .then((users) => setCaseworkers(users.filter((u) => u.role === 'caseworker' && u.active)))
+      .catch(() => {}); // non-critical
+  }, [stateId, canReassign]);
+
+  async function handleReassign(childId: string, newOwnerId: string) {
+    if (!stateId || !userId) return;
+    try {
+      await reassignChild(stateId, childId, newOwnerId, userId);
+      toast('Profile reassigned', 'success');
+    } catch {
+      toast('Failed to reassign profile', 'error');
+    }
+  }
 
   const counts = {
     draft: children.filter((c) => c.status === 'draft').length,
@@ -237,12 +286,12 @@ export default function DashboardPage() {
         ) : (
           <ul className="divide-y divide-gray-100">
             {filtered.map((child) => (
-              <li key={child.id}>
+              <li key={child.id} className="flex items-center hover:bg-gray-50 transition-colors">
                 <Link
                   to={`/profile/${child.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                  className="flex flex-1 items-center justify-between px-4 py-3 min-w-0"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900">{child.firstName}</p>
                     <p className="text-xs text-gray-400">
                       Age {child.ageAtListing}
@@ -253,10 +302,24 @@ export default function DashboardPage() {
                       )}
                     </p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(child.status)}`}>
+                  <span className={`ml-3 flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(child.status)}`}>
                     {child.status.replace(/_/g, ' ')}
                   </span>
                 </Link>
+                {canReassign && caseworkers.length > 0 && (
+                  <div className="px-3 flex-shrink-0">
+                    <select
+                      value={child.ownedBy}
+                      onChange={(e) => handleReassign(child.id, e.target.value)}
+                      className="text-xs border border-gray-200 rounded px-2 py-1 bg-white text-gray-600 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                      title="Assigned caseworker"
+                    >
+                      {caseworkers.map((cw) => (
+                        <option key={cw.id} value={cw.id}>{cw.displayName}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

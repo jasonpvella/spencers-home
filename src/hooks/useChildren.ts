@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   subscribeToChildren,
+  subscribeToOwnedChildren,
   subscribeToPublishedChildren,
   subscribeToChild,
   createChild,
@@ -28,7 +29,9 @@ export function usePublishedChildren(stateId: string) {
   return { children, loading, error };
 }
 
-export function useAllChildren(stateId: string) {
+// ownedByUid: when provided, only returns profiles owned by that user (own mode for caseworkers).
+// When omitted, returns all profiles in the state (supervisor+ or pool mode).
+export function useAllChildren(stateId: string, ownedByUid?: string) {
   const [children, setChildren] = useState<ChildProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +39,20 @@ export function useAllChildren(stateId: string) {
   useEffect(() => {
     if (!stateId) return;
     setLoading(true);
-    const unsub = subscribeToChildren(
-      stateId,
-      (data) => { setChildren(data); setLoading(false); },
-      (e) => { setError(e.message); setLoading(false); }
-    );
+    const unsub = ownedByUid
+      ? subscribeToOwnedChildren(
+          stateId,
+          ownedByUid,
+          (data) => { setChildren(data); setLoading(false); },
+          (e) => { setError(e.message); setLoading(false); }
+        )
+      : subscribeToChildren(
+          stateId,
+          (data) => { setChildren(data); setLoading(false); },
+          (e) => { setError(e.message); setLoading(false); }
+        );
     return unsub;
-  }, [stateId]);
+  }, [stateId, ownedByUid]);
 
   return { children, loading, error };
 }

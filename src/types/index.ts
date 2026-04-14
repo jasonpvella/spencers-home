@@ -54,6 +54,7 @@ export interface ChildProfile {
   lastUpdatedAt: Timestamp;
   createdAt: Timestamp;
   createdBy: string;
+  ownedBy: string;
   viewCount: number;
   saveCount: number;
   inquiryCount: number;
@@ -117,6 +118,7 @@ export interface StateConfig {
     noLocationIdentifiers: boolean;
     additionalRules: string[];
   };
+  caseworkerProfileVisibility?: 'own' | 'pool';
 }
 
 // ─── User ──────────────────────────────────────────────────────────────────────
@@ -215,6 +217,7 @@ export interface Sponsor {
 
 export type AuditEventType =
   | 'profile_status_change'
+  | 'profile_reassigned'
   | 'consent_signed'
   | 'consent_expired'
   | 'media_upload'

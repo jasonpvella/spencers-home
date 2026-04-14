@@ -41,7 +41,7 @@ export async function listPublishedChildren(stateId: string): Promise<ChildProfi
 
 export async function createChild(
   stateId: string,
-  data: Omit<ChildProfile, 'id' | 'stateId' | 'createdAt' | 'lastUpdatedAt' | 'viewCount' | 'saveCount' | 'inquiryCount'>,
+  data: Omit<ChildProfile, 'id' | 'stateId' | 'createdAt' | 'lastUpdatedAt' | 'viewCount' | 'saveCount' | 'inquiryCount' | 'ownedBy'>,
   createdBy: string
 ): Promise<string> {
   const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
@@ -49,6 +49,7 @@ export async function createChild(
     ...clean,
     stateId,
     createdBy,
+    ownedBy: createdBy,
     viewCount: 0,
     saveCount: 0,
     inquiryCount: 0,
@@ -115,6 +116,20 @@ export function subscribeToPublishedChildren(
   );
 }
 
+export function subscribeToOwnedChildren(
+  stateId: string,
+  ownedByUid: string,
+  onChange: (children: ChildProfile[]) => void,
+  onError: (e: Error) => void
+): Unsubscribe {
+  const q = query(childrenRef(stateId), where('ownedBy', '==', ownedByUid));
+  return onSnapshot(
+    q,
+    (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ChildProfile)),
+    onError
+  );
+}
+
 export function subscribeToChild(
   stateId: string,
   childId: string,
@@ -142,6 +157,26 @@ export async function addPhotoUrl(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+export async function reassignChild(
+  stateId: string,
+  childId: string,
+  newOwnerId: string,
+  performedBy: string
+): Promise<void> {
+  await updateDoc(doc(db, 'states', stateId, 'children', childId), {
+    ownedBy: newOwnerId,
+    lastUpdatedAt: serverTimestamp(),
+  });
+  await writeAuditLog({
+    stateId,
+    eventType: 'profile_reassigned',
+    targetId: childId,
+    targetType: 'child',
+    performedBy,
+    details: { newOwnerId },
+  });
+}
 
 export async function recordProfileView(stateId: string, childId: string): Promise<void> {
   await updateDoc(doc(db, 'states', stateId, 'children', childId), {

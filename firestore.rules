@@ -83,32 +83,65 @@ service cloud.firestore {
       allow write: if isStateAdmin() && (belongsToState(stateId) || isPlatformAdmin());
 
       // Children
-      // Public: anyone can read profiles with status == 'published'
-      // Auth: caseworker+ from matching state can read all, write with stateId validation
+      // Public: anyone can read profiles with status == 'published'.
+      // Supervisor+: can read/write any profile in their state.
+      // Caseworker — 'own' mode (state default): can only read/write profiles they own
+      //   (ownedBy == uid). Falls back to createdBy for legacy docs without ownedBy.
+      // Caseworker — 'pool' mode (state opt-in): can read/write all profiles in state.
+      // Ownership mode is read from the state document to avoid client-supplied values.
+      // Short-circuit ordering minimises get() calls: supervisor+ resolves first (no get());
+      // owned-doc check resolves second (no get() when caseworker views their own profile);
+      // pool-mode get() only fires for caseworkers reading docs they don't own.
+
+      function stateConfig() {
+        return get(/databases/$(database)/documents/states/$(stateId)).data;
+      }
+
+      function isPoolMode() {
+        return stateConfig().get('caseworkerProfileVisibility', 'own') == 'pool';
+      }
+
+      function ownsProfile() {
+        return resource.data.get('ownedBy', resource.data.createdBy) == request.auth.uid;
+      }
+
+      function canAccessProfile() {
+        return belongsToState(stateId) && isCaseworkerOrAbove()
+          && (
+            userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']
+            || ownsProfile()
+            || isPoolMode()
+          );
+      }
+
       match /children/{childId} {
         allow read: if
           resource.data.status == 'published'
-          || (isCaseworkerOrAbove() && belongsToState(stateId));
+          || canAccessProfile();
 
         allow create: if
           isCaseworkerOrAbove()
           && belongsToState(stateId)
-          && request.resource.data.stateId == stateId;
+          && request.resource.data.stateId == stateId
+          // Caseworkers must own what they create; supervisor+ may set any ownedBy.
+          && (
+            userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']
+            || request.resource.data.ownedBy == request.auth.uid
+          );
 
         allow update: if
-          // Caseworker+ from matching state can update profile fields.
-          // Only supervisor+ can transition status to 'published'.
-          (isCaseworkerOrAbove()
-            && belongsToState(stateId)
+          // Standard update: must have access to the profile, stateId must not change,
+          // and only supervisor+ may transition a non-published profile to 'published'.
+          (canAccessProfile()
             && request.resource.data.stateId == stateId
             && (request.resource.data.status != 'published'
                 || resource.data.status == 'published'
                 || userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']))
-          // Anyone may increment viewCount by exactly 1 (fire-and-forget view tracking)
+          // Anyone may increment viewCount by exactly 1 (fire-and-forget view tracking).
           || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount'])
               && request.resource.data.viewCount == resource.data.viewCount + 1);
-          // Note: inquiryCount is now incremented server-side by the submitInquiry
-          // Cloud Function (Admin SDK — bypasses rules). No client rule needed.
+          // Note: inquiryCount is incremented server-side by the submitInquiry Cloud Function
+          // (Admin SDK — bypasses rules). No client rule needed.
 
         // No hard deletes — use status: 'archived'
         allow delete: if false;

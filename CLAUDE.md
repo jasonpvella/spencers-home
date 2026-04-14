@@ -6,6 +6,17 @@
 
 ---
 
+## Terminal Commands
+
+**Never ask Jason to run terminal commands manually.** Run them yourself with the Bash tool. This includes:
+- Migration scripts (`npx tsx scripts/...`) — the service account key is at `/Users/jasonvella/Downloads/spencers-home-dev-firebase-adminsdk-fbsvc-31d5d16872.json`
+- Firebase deploys (`firebase deploy --only ...`)
+- TypeScript checks (`npx tsc --noEmit`)
+- Builds (`npm run build`)
+- Git operations (`git add`, `git commit`, `git push`)
+
+---
+
 ## CRITICAL RULES
 
 **NEVER store child last name, school name, location, or case history — anywhere.**
