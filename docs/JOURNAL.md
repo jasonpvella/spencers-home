@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Sibling group model redesigned — siblings are now a single profile type (driven by `gender: 'sibling_group'`) rather than cross-linked individual profiles. "Home" link added to the mobile hamburger menu for all signed-in roles.
+**Current Focus:** Error boundary + `window.onerror` diagnostic scaffolding added. Mobile Chrome white screen resolved (stale cache — cleared history fixed it). App is stable on both Chrome and Edge mobile.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -38,6 +38,7 @@
 - **Storage rules deployed** ✅
 - **Sibling group model:** single-profile model — `gender: 'sibling_group'` drives category filtering, comma-separated names/ages embedded in one Firestore doc, old cross-link system removed ✅
 - **Emulator seed script, admin bootstrap script, platform admin live** ✅
+- **Error boundary + `window.onerror`/`unhandledrejection` handlers** in `main.tsx` and `index.html` — white screen → readable error message ✅
 - TypeScript: 0 errors ✅
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
@@ -131,6 +132,18 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-13 — Error boundary + mobile Chrome white screen diagnosis
+
+Mobile Chrome showed a blank white screen while Edge on the same device worked. Root cause: stale cached JS chunks from a previous deploy — Chrome served old broken files while Edge had fetched fresh ones. Resolved by clearing browser history/cache on the phone; no code changes were needed for the underlying issue.
+
+Added permanent diagnostic scaffolding:
+- `ErrorBoundary` class component in `main.tsx` wrapping the entire app — any React render error now shows a readable message instead of a blank screen
+- `window.onerror` and `window.addEventListener('unhandledrejection')` in `index.html` — catches errors that occur before React mounts (module load failures, syntax errors, Firebase init crashes)
+
+Both are intentionally kept in production. The cost is negligible and the debugging value is high.
+
+---
 
 ### 2026-04-13 — Sibling group model redesign + hamburger Home link
 

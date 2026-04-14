@@ -15,6 +15,24 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        document.getElementById('root').innerHTML =
+          '<div style="padding:24px;font-family:sans-serif;max-width:600px">' +
+          '<h2 style="color:#b91c1c;margin:0 0 8px">Load error</h2>' +
+          '<pre style="font-size:12px;white-space:pre-wrap;color:#374151">' +
+          msg + '\n' + src + ':' + line +
+          '</pre></div>';
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        document.getElementById('root').innerHTML =
+          '<div style="padding:24px;font-family:sans-serif;max-width:600px">' +
+          '<h2 style="color:#b91c1c;margin:0 0 8px">Unhandled error</h2>' +
+          '<pre style="font-size:12px;white-space:pre-wrap;color:#374151">' +
+          (e.reason && e.reason.message ? e.reason.message : String(e.reason)) +
+          '</pre></div>';
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
