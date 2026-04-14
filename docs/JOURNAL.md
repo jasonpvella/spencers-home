@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Mobile polish pass complete. Landing page and gallery confirmed great on device; all authenticated pages now responsive. Gallery scroll/filter persistence fixed on back-navigation.
+**Current Focus:** Admin-invited user flow shipped. State admin can now create user accounts directly and send a branded invitation email — no more self-registration + approval loop for staff onboarding.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -24,7 +24,7 @@
   - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section ✅
   - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons (mobile-stacked), inline media, archive, inquiry list, sibling group management ✅
   - ConsentFormPage: canvas draw signature, youth assent + ICWA conditional fields, Nebraska draft language ✅
-  - AdminUsersPage: list users by state, approve (with "notify them" reminder toast) / deactivate, role change, requested role shown on pending users — mobile-stacked rows ✅
+  - AdminUsersPage: list users by state, approve / deactivate, role change, requested role shown on pending users — mobile-stacked rows; **Invite user** button + modal (name/email/role → Cloud Function → invitation email) ✅
   - RegisterPage: self-service registration with role selector (caseworker or supervisor), pending approval flow, fires admin notification on submit ✅
   - FamilyRegisterPage: self-service family account at `/register/family`, auto-approved ✅
   - StateConfigPage: branding, consent model, SSO config ✅
@@ -47,6 +47,7 @@
 3. Empty gallery state polish + console error audit
 4. First demo prep: decide which state admin account to use for walkthrough
 5. Consider `pt-10` on public pages if staff preview bar overlaps hero content during walkthrough
+6. Upgrade invitation email: add state name, branding color, and a cleaner HTML template when a sending domain is verified
 
 ---
 
@@ -124,9 +125,32 @@ No Firestore schema change. `isExpiringSoon` is computed on ProfileDetailPage fr
 ### Email on Approval — Deferred (2026-04-12)
 Cloud Functions not initialized. Decision: defer until a real sending domain is set up (needed anyway for branded Auth emails). At that point, set up SendGrid + custom SMTP for all Auth emails in one pass. Interim workaround: approval toast reminds admin to notify the user manually.
 
+### Admin-Invited Users — Cloud Function + Resend (2026-04-13)
+State admin can create user accounts directly via "Invite user" modal on AdminUsersPage. Flow: admin fills name/email/role → `inviteUser` Cloud Function (Firebase Functions v2, us-central1) creates Auth account, writes Firestore user doc (`active: true`, `createdBy` caller uid), writes audit log entry (`user_created`), calls `admin.auth().generatePasswordResetLink()` for the setup URL, sends a custom invitation email via Resend using `onboarding@resend.dev`. Email copy reads as onboarding ("You've been added to Spencer's Home") not password recovery. RESEND_API_KEY stored in Google Cloud Secret Manager via `firebase functions:secrets:set`. Functions emulator wired to port 5001. Node 20 deprecation warning noted — upgrade needed before 2026-10-30.
+
 ---
 
 ## Historical Log
+
+### 2026-04-13 — Admin-invited user flow: Cloud Functions + Resend
+
+First server-side code in the project. Introduced Firebase Cloud Functions v2 (`functions/` directory, TypeScript, Node 20) and Resend for transactional email.
+
+**`inviteUser` Cloud Function (`functions/src/index.ts`):**
+Callable function. Validates caller is `state_admin` or `platform_admin` server-side (Admin SDK bypasses Firestore rules — server-side role check is mandatory). Creates Firebase Auth user, writes Firestore user doc (`active: true` — no approval step needed for admin-created accounts), writes `user_created` audit log entry, generates a password-setup link via `admin.auth().generatePasswordResetLink()`, sends invitation email via Resend. RESEND_API_KEY injected via `defineSecret()` from Google Cloud Secret Manager.
+
+**Email framing:**
+Intentional decision: email copy says "You've been added to Spencer's Home — click to set up your account" rather than "reset your password." Same Firebase mechanism, custom email send from the function. Avoids confusing caseworkers (who have never had an account) with recovery language.
+
+**AdminUsersPage:**
+Added "Invite user" button to page header. Modal collects name, email, role (caseworker/supervisor/state_admin). Calls `httpsCallable(functions, 'inviteUser')`. Loading, success toast, and error states handled. New user appears in the active user list immediately via existing real-time listener.
+
+**Infrastructure:**
+`firebase.json` updated with functions source + Functions emulator (port 5001). `src/config/firebase.ts` exports `functions` instance, connects to emulator when `VITE_USE_EMULATORS=true`. Deployed to `spencers-home-dev`. Cleanup policy set (`--force`).
+
+TypeScript: 0 errors (frontend + functions).
+
+---
 
 ### 2026-04-12 — Staff preview bar on public pages
 

@@ -71,6 +71,7 @@ Arkansas Project Zero (theprojectzero.org): 200+ professional films, 138K Facebo
 - [x] White-label branding (dynamic color, logo upload, custom domain field — any state)
 - [x] Sponsor management (admin upload/toggle/delete, live logos on landing page)
 - [x] UX gap pass: consent signature viewing, role-at-registration, admin new-user notifications, account settings page, sibling group management
+- [x] Admin-invited user flow: Cloud Function + Resend invitation email (state admin creates accounts directly, no self-registration required)
 - [ ] State-specific consent form template (Nebraska ne-draft-v1 exists as reference; generalize for other states)
 - [ ] End-to-end core loop walk + polish pass (empty states, mobile, console errors)
 - [ ] Deploy to production: `firebase deploy`
