@@ -37,7 +37,9 @@
 3. Append a dated entry to `## Historical Log` summarizing the session delta.
 4. If scope, features, or requirements changed, update the relevant phase in `docs/PRD.md` and note the change in the log entry.
 5. Stage all changed files and push to GitHub (`git add -A && git commit -m "..." && git push`).
-6. Build the frontend (`npm run build`) then deploy to Firebase Hosting (`firebase deploy --only hosting`) to refresh the live site.
+6. If `firestore.rules` or `firestore.indexes.json` changed this session, run `firebase deploy --only firestore:rules,firestore:indexes` first.
+7. If `functions/` changed this session, build and deploy functions: `cd functions && npm run build && cd .. && firebase deploy --only functions`.
+8. Build the frontend (`npm run build`) then deploy to Firebase Hosting (`firebase deploy --only hosting`) to refresh the live site.
 
 ---
 

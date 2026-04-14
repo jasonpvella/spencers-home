@@ -48,6 +48,14 @@
         { "fieldPath": "caseworkerId", "order": "ASCENDING" },
         { "fieldPath": "replyStatus", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "inquiries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "childId", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

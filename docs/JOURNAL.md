@@ -43,10 +43,12 @@
 - TypeScript: 0 errors ✅
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
-**What's done (updated 2026-04-13):**
+**What's done (updated 2026-04-14):**
 - **`submitInquiry` Cloud Function deployed to production** ✅ — inquiry form on live site is fully operational
-- **Firestore composite indexes deployed for flat inquiries:** `caseworkerId + submittedAt` and `caseworkerId + replyStatus` ✅
+- **Firestore composite indexes deployed for flat inquiries:** `caseworkerId + submittedAt`, `caseworkerId + replyStatus`, `childId + submittedAt DESC` ✅
 - **Node.js runtime upgraded: 20 → 22** ✅ — ahead of the 2026-04-30 Node 20 deprecation deadline
+- **Firestore security rules deployed** ✅ — rules were never re-deployed after flat inquiry collection was introduced; production had stale rules causing widespread read denials
+- **Save Project protocol fixed** ✅ — now deploys rules + indexes + functions when changed, not just hosting
 
 **Next session — in order:**
 1. Walk the core loop end-to-end on both desktop and mobile
@@ -136,6 +138,24 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-14 — Fix production: Firestore rules never deployed + submitInquiry not compiled
+
+**Root cause 1 — Firestore rules stale in production:**
+The Save Project protocol only deployed hosting (`firebase deploy --only hosting`). Firestore security rules were last deployed during the initial v1 deploy and had not been updated since. At least three subsequent commits (`b804ad5`, `4b25b5d`, `14e0e94`) changed `firestore.rules` without those changes ever reaching production. The flat `states/{stateId}/inquiries` read rule didn't exist in production — all client reads of the inquiry collection were silently denied. The Cloud Function writes succeeded (Admin SDK bypasses rules), so the form showed "Message received" but nothing ever appeared on the InquiriesPage. Deployed `firebase deploy --only firestore:rules` to fix.
+
+**Root cause 2 — submitInquiry not in compiled output:**
+`submitInquiry` was written in `functions/src/index.ts` but the `lib/index.js` compiled artifact was stale — it pre-dated the function. Firebase deployed the stale `lib/` rather than recompiling. Running `npm run build` in `functions/` manually resolved it. Both functions now deployed.
+
+**Protocol fix:**
+`CLAUDE.md` Save Project protocol updated: now explicitly deploys `firestore:rules,firestore:indexes` when either file changed, and `functions` when `functions/` changed. Previously only hosted frontend.
+
+**Indexes added:**
+- `caseworkerId + submittedAt ASC` (InquiriesPage caseworker list)
+- `caseworkerId + replyStatus` (pending count badge)
+- `childId + submittedAt DESC` (ProfileDetailPage per-child inquiry list — was missing, would have failed in production when opening a child with inquiries)
+
+---
 
 ### 2026-04-13 — Production deploy: submitInquiry function + inquiry indexes + Node.js 22
 
