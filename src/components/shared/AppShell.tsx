@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useCurrentUser } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
+import { usePendingInquiryCount } from '@/hooks/useInquiries';
 import { markNotificationRead } from '@/services/notifications';
 import { getStateConfig } from '@/services/stateConfig';
 import type { ReactNode } from 'react';
@@ -97,6 +98,7 @@ export default function AppShell({ children }: Props) {
 
   const isAdmin = ADMIN_ROLES.includes(user?.role as typeof ADMIN_ROLES[number]);
   const unreadCount = notifications.length;
+  const pendingInquiries = usePendingInquiryCount(user?.stateId ?? '', user?.role ?? '', user?.id ?? '');
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm px-3 py-1.5 rounded-md transition-colors ${
@@ -128,6 +130,14 @@ export default function AppShell({ children }: Props) {
             <div className="hidden md:flex items-center gap-1">
               <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
               <NavLink to="/gallery" className={navLinkClass}>Gallery</NavLink>
+              <NavLink to="/inquiries" className={({ isActive }) => `relative ${navLinkClass({ isActive })}`}>
+                Inquiries
+                {pendingInquiries > 0 && (
+                  <span className="ml-1.5 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 inline-flex items-center justify-center px-1 leading-none">
+                    {pendingInquiries > 99 ? '99+' : pendingInquiries}
+                  </span>
+                )}
+              </NavLink>
               {user && isAdmin && (
                 <>
                   <NavLink to="/admin/users" className={navLinkClass}>Users</NavLink>
@@ -235,8 +245,16 @@ export default function AppShell({ children }: Props) {
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-20">
                   <NavLink to="/" className={mobileNavLinkClass} onClick={closeMenu} end>Home</NavLink>
-                  <NavLink to="/dashboard" className={mobileNavLinkClass} onClick={closeMenu}>Dashboard</NavLink>
                   <NavLink to="/gallery" className={mobileNavLinkClass} onClick={closeMenu}>Gallery</NavLink>
+                  <NavLink to="/inquiries" className={({ isActive }) => `flex items-center justify-between ${mobileNavLinkClass({ isActive })}`} onClick={closeMenu}>
+                    <span>Inquiries</span>
+                    {pendingInquiries > 0 && (
+                      <span className="bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 leading-none">
+                        {pendingInquiries > 99 ? '99+' : pendingInquiries}
+                      </span>
+                    )}
+                  </NavLink>
+                  <NavLink to="/dashboard" className={mobileNavLinkClass} onClick={closeMenu}>Dashboard</NavLink>
                   {user && isAdmin && (
                     <>
                       <NavLink to="/admin/users" className={mobileNavLinkClass} onClick={closeMenu}>Users</NavLink>
@@ -245,12 +263,7 @@ export default function AppShell({ children }: Props) {
                       )}
                     </>
                   )}
-                  {user && (
-                    <NavLink to="/settings" className={mobileNavLinkClass} onClick={closeMenu}>
-                      <span className="block">{user.displayName}</span>
-                      <span className="text-xs text-gray-400">{user.role.replace(/_/g, ' ')}</span>
-                    </NavLink>
-                  )}
+                  <NavLink to="/settings" className={mobileNavLinkClass} onClick={closeMenu}>Account Settings</NavLink>
                   <button
                     onClick={() => { closeMenu(); handleSignOut(); }}
                     className="block w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"

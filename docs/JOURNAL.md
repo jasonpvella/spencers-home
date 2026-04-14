@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Error boundary + `window.onerror` diagnostic scaffolding added. Mobile Chrome white screen resolved (stale cache — cleared history fixed it). App is stable on both Chrome and Edge mobile.
+**Current Focus:** Inquiry management system built and deployed. Inquiries moved from per-child subcollections to a flat state-level collection with a `submitInquiry` Cloud Function as the sole write path. Full `/inquiries` page live with role-scoped views, status management, notes, and repeat-inquirer detection.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -12,17 +12,17 @@
 - `firebase.json`, `.firebaserc`, `firestore.indexes.json` for deploy + emulators ✅
 - Emulator connection in `firebase.ts` via `VITE_USE_EMULATORS=true` ✅
 - Data models + all service layer (`children`, `consent`, `storage`, `audit`, `users`, `inquiries`, `stateConfig`, `notifications`, `favorites`, `sso`) ✅
-- Custom hooks: `useAuth`, `useChildren` (with reload), `useConsent`, `useNotifications`, `useFavorites`, `useIsFavorite`, `useFavoriteToggle` ✅
+- Custom hooks: `useAuth`, `useChildren` (with reload), `useConsent`, `useNotifications`, `useFavorites`, `useIsFavorite`, `useFavoriteToggle`, `useInquiries`, `usePendingInquiryCount` ✅
 - Zustand auth store ✅
 - **Auth flows:** Login + password reset + "forgot password" + caseworker self-service registration (pending approval) + family self-registration (auto-approved) + SSO (SAML/OIDC redirect, first-login provisioning) ✅
 - **RequireAuth:** loading state, inactive/pending-approval wall, role gate (family → `/`, caseworker → `/dashboard`) ✅
-- **AppShell:** sticky nav with hamburger menu on mobile (< 768px), role badge (links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config; "Home" link at top of hamburger for all roles ✅
+- **AppShell:** sticky nav with hamburger menu on mobile (< 768px), role badge (links to /settings), sign-out, bell notification dropdown (type-aware: inquiry + registration), dynamic logo + brand color from state config; hamburger order: Home → Gallery → Inquiries (with live pending badge) → Dashboard → Users → State Config → Account Settings → Sign Out ✅
 - **Pages built:**
   - LandingPage: public hero, 4 category cards (Individuals, Siblings, Boys, Girls), about/partnership section, live sponsor logos ✅
   - GalleryPage (`/gallery`): video-first ProfileCards, filters (persisted to sessionStorage), scroll position restored on back-navigation; siblings filter uses `gender === 'sibling_group'` ✅
   - DashboardPage: status stats, expiring consent alerts, inquiry count, profile search, CSV exports — mobile-responsive header ✅
   - ProfileFormPage: create + edit, interest tag picker, PII bio warnings, ICWA section; sibling group mode (driven by gender selector) with comma-separated names/ages, relabeled fields ✅
-  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons (mobile-stacked), inline media, archive, inquiry list ✅
+  - ProfileDetailPage: status/consent badges, consent record with signature image + language version + expiring-soon detection, action buttons (mobile-stacked), inline media, archive, inquiry list (reads flat collection) ✅
   - ConsentFormPage: canvas draw signature, youth assent + ICWA conditional fields, Nebraska draft language ✅
   - AdminUsersPage: list users by state, approve / deactivate, role change, requested role shown on pending users — mobile-stacked rows; **Invite user** button + modal (name/email/role → Cloud Function → invitation email) ✅
   - RegisterPage: self-service registration with role selector (caseworker or supervisor), pending approval flow, fires admin notification on submit ✅
@@ -30,25 +30,26 @@
   - StateConfigPage: branding, consent model, SSO config ✅
   - FavoritesPage: saved profiles for family users ✅
   - AccountSettingsPage (`/settings`): display name update (Auth + Firestore) + password change (reauthenticate → updatePassword) ✅
+  - **InquiriesPage (`/inquiries`):** flat collection, sorted oldest-first, role-scoped (caseworker sees own; supervisor/admin sees all), repeat-inquirer badge, caseworker name/email, inline status dropdown (6 statuses), inline notes edit (Enter/Escape), live pending count badge in nav ✅
 - **MediaUpload component:** react-dropzone, per-file progress bar, photo + video ✅
-- **InquiryModal:** public gallery CTA, writes to Firestore, triggers caseworker notification ✅
+- **Inquiry submission:** `submitInquiry` Cloud Function — server-side child lookup, writes flat inquiry doc, increments `inquiryCount`, sends notification (parallel writes) ✅
 - **Toast system:** Radix Toast, success/error/info ✅
-- **Firestore security rules:** full audit, notification sentinel rules for admin-targeted notifications ✅
+- **Firestore security rules:** full audit, flat inquiry rules (create: false; read/update: role+stateId scoped; old subcollection locked) ✅
 - **Firestore indexes:** children (status+age, status+gender, status+lastUpdatedAt) + notifications (userId+read+createdAt) ✅
 - **Storage rules deployed** ✅
-- **Sibling group model:** single-profile model — `gender: 'sibling_group'` drives category filtering, comma-separated names/ages embedded in one Firestore doc, old cross-link system removed ✅
+- **Sibling group model:** single-profile model — `gender: 'sibling_group'` drives category filtering, comma-separated names/ages embedded in one Firestore doc ✅
 - **Emulator seed script, admin bootstrap script, platform admin live** ✅
-- **Error boundary + `window.onerror`/`unhandledrejection` handlers** in `main.tsx` and `index.html` — white screen → readable error message ✅
+- **Error boundary + `window.onerror`/`unhandledrejection` handlers** in `main.tsx` and `index.html` ✅
 - TypeScript: 0 errors ✅
 - **Deployed:** https://spencers-home-dev.web.app ✅
 
 **Next session — in order:**
-1. Walk the core loop end-to-end on both desktop and mobile
-2. Strip SSO from login page and state config UI
-3. Empty gallery state polish + console error audit
-4. First demo prep: decide which state admin account to use for walkthrough
-5. Consider `pt-10` on public pages if staff preview bar overlaps hero content during walkthrough
-6. Upgrade invitation email: add state name, branding color, and a cleaner HTML template when a sending domain is verified
+1. Deploy `submitInquiry` Cloud Function to production (`firebase deploy --only functions`) — inquiry form on live site won't work until this is done
+2. Add Firestore composite index for flat inquiry queries: `stateId` + `submittedAt` and `caseworkerId` + `submittedAt` (needed for production — emulator doesn't enforce)
+3. Walk the core loop end-to-end on both desktop and mobile
+4. Strip SSO from login page and state config UI
+5. Empty gallery state polish + console error audit
+6. First demo prep: decide which state admin account to use for walkthrough
 
 ---
 
@@ -132,6 +133,34 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-13 — Inquiry management system: flat collection + Cloud Function + InquiriesPage
+
+**Architecture decision:** Moved inquiries from per-child subcollections (`states/{sId}/children/{cId}/inquiries`) to a flat state-level collection (`states/{sId}/inquiries`). Driven by need for cross-child views sorted by age-of-inquiry and role-scoped access without complex collection group rules.
+
+**`submitInquiry` Cloud Function:**
+Replaces the previous client-side Firestore write. Public inquiry form (`PublicProfilePage`) now calls `httpsCallable(functions, 'submitInquiry')`. Function: validates `childId`/`stateId`, does server-side child lookup to extract `caseworkerId` and `childFirstName` (never trusted from client), writes flat inquiry doc with `replyStatus: 'pending'`, then parallel-awaits `inquiryCount` increment on the child doc + caseworker notification write. Old subcollection create rule locked to `if false`.
+
+**`Inquiry` type extended:** Added `childId`, `childFirstName`, `stateId`, `caseworkerId`, `replyStatus: ReplyStatus`, `notes?: string`. `ReplyStatus` union type + `REPLY_STATUS_LABELS` map added to `src/types/index.ts`. Six statuses: `pending`, `replied_following_up`, `replied_no`, `actively_pursuing`, `no_response_from_family`, `withdrawn`.
+
+**InquiriesPage (`/inquiries`):**
+New page gated to `CASEWORKER_ROLES`. Real-time listener via `useInquiries` hook + `subscribeToInquiries` service. Role scoping: caseworkers see only inquiries where `caseworkerId == uid`; supervisor/admin see all in state. Sorted oldest-first (the inquiry that has waited longest is at the top). Repeat inquirer detection: any email appearing more than once in the state's inquiry list gets an "Repeat inquirer" badge. Caseworker name/email loaded via one-shot `listUsersByState` on mount. Inline status dropdown, inline notes edit (Enter to save, Escape to cancel — single `editingId + notesDraft` state pair, not a per-row map).
+
+**AppShell:**
+Added Inquiries nav link to both desktop nav and hamburger. Live pending count badge (rose pill) on both. `usePendingInquiryCount` hook uses a separate lean count-only Firestore listener (does not load full inquiry list into AppShell). Hamburger order updated to: Home → Gallery → Inquiries → Dashboard → Users → State Config → Account Settings → Sign Out.
+
+**Firestore rules:**
+Flat inquiry collection: `create: false` (Admin SDK only), `read`: stateId + role scoped (supervisor+ see all, caseworker sees own), `update`: same scoping + `affectedKeys().hasOnly(['replyStatus', 'notes'])`. Old subcollection rule locked to `read, write: if false`. Public `inquiryCount` client-increment exception removed from children update rule (now Cloud Function only).
+
+**Seed script:** Updated to write two seed inquiries to flat path with all new fields. One `pending`, one `replied_following_up` with a note.
+
+**Code quality fixes (simplify pass):** `onSnapshot` error callbacks added to both listeners (loading no longer hangs forever on Firestore errors); `role` param typed as `UserRole` throughout service + hooks; redundant status badge pill removed (select shows current value); parallel `Promise.all` for independent Cloud Function writes.
+
+TypeScript: 0 errors (frontend + functions).
+
+**Pending before production use:** Deploy `submitInquiry` Cloud Function (`firebase deploy --only functions`). Add Firestore composite indexes for flat inquiry queries.
+
+---
 
 ### 2026-04-13 — Error boundary + mobile Chrome white screen diagnosis
 

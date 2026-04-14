@@ -106,21 +106,43 @@ service cloud.firestore {
                 || userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']))
           // Anyone may increment viewCount by exactly 1 (fire-and-forget view tracking)
           || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount'])
-              && request.resource.data.viewCount == resource.data.viewCount + 1)
-          // Public inquiry submission may increment inquiryCount by exactly 1
-          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['inquiryCount'])
-              && request.resource.data.inquiryCount == resource.data.inquiryCount + 1);
+              && request.resource.data.viewCount == resource.data.viewCount + 1);
+          // Note: inquiryCount is now incremented server-side by the submitInquiry
+          // Cloud Function (Admin SDK — bypasses rules). No client rule needed.
 
         // No hard deletes — use status: 'archived'
         allow delete: if false;
 
-        // Inquiries — public users can create (no auth required for gallery CTA)
-        // Caseworkers from the same state can read. No updates or deletes.
+        // Subcollection inquiries — legacy path, now locked down.
+        // All new inquiries write to the flat states/{stateId}/inquiries collection
+        // via the submitInquiry Cloud Function (Admin SDK). Nothing reads this path.
         match /inquiries/{inquiryId} {
-          allow create: if true;
-          allow read: if isCaseworkerOrAbove() && belongsToState(stateId);
-          allow update, delete: if false;
+          allow read, write: if false;
         }
+      }
+
+      // Flat inquiries — written exclusively by the submitInquiry Cloud Function.
+      // Reads: supervisor+ see all in state; caseworkers see only their own.
+      // Updates: staff may change replyStatus and notes only.
+      match /inquiries/{inquiryId} {
+        allow create: if false; // Cloud Function (Admin SDK) only
+
+        allow read: if belongsToState(stateId)
+          && isCaseworkerOrAbove()
+          && (
+            userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']
+            || resource.data.caseworkerId == request.auth.uid
+          );
+
+        allow update: if belongsToState(stateId)
+          && isCaseworkerOrAbove()
+          && (
+            userRole() in ['supervisor', 'agency_admin', 'state_admin', 'platform_admin']
+            || resource.data.caseworkerId == request.auth.uid
+          )
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replyStatus', 'notes']);
+
+        allow delete: if false;
       }
 
       // Notifications — written by public inquiry flow (no auth required to create)

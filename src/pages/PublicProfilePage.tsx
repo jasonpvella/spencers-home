@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useChild } from '@/hooks/useChildren';
-import { submitInquiry } from '@/services/inquiries';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/config/firebase';
 import { recordProfileView } from '@/services/children';
 
 
@@ -59,10 +60,8 @@ export default function PublicProfilePage() {
     if (!stateId || !childId || !child) return;
     setSubmitError(null);
     try {
-      await submitInquiry(stateId, childId, values, {
-        caseworkerUserId: child.createdBy,
-        childFirstName: child.firstName,
-      });
+      const submitInquiry = httpsCallable(functions, 'submitInquiry');
+      await submitInquiry({ childId, stateId, ...values });
       setSubmitted(true);
     } catch {
       setSubmitError('Something went wrong. Please try again.');

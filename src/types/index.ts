@@ -134,14 +134,40 @@ export interface User {
 
 // ─── Inquiry ───────────────────────────────────────────────────────────────────
 
+export type ReplyStatus =
+  | 'pending'
+  | 'replied_following_up'
+  | 'replied_no'
+  | 'actively_pursuing'
+  | 'no_response_from_family'
+  | 'withdrawn';
+
+export const REPLY_STATUS_LABELS: Record<ReplyStatus, string> = {
+  pending: 'Not replied',
+  replied_following_up: 'Replied — will follow up',
+  replied_no: 'Replied — not a fit',
+  actively_pursuing: 'Actively pursuing',
+  no_response_from_family: 'No response from family',
+  withdrawn: 'Withdrawn by family',
+};
+
 export interface Inquiry {
   id: string;
+  // Flat collection fields (set server-side by Cloud Function)
+  childId: string;
+  childFirstName: string;
+  stateId: string;
+  caseworkerId: string;
+  // Inquirer-supplied fields
   name: string;
   phone: string;
   email: string;
   inquirerState: string;
   message: string;
   submittedAt: Timestamp;
+  // Staff-managed fields
+  replyStatus: ReplyStatus;
+  notes?: string;
 }
 
 // ─── Notification ──────────────────────────────────────────────────────────────

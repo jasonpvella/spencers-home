@@ -1,64 +1,86 @@
 import {
   collection,
-  addDoc,
-  getDocs,
-  serverTimestamp,
-  increment,
-  updateDoc,
   doc,
+  getDocs,
+  onSnapshot,
   query,
   orderBy,
+  where,
+  updateDoc,
+  Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { createInquiryNotification } from './notifications';
-import type { Inquiry } from '@/types';
+import type { Inquiry, ReplyStatus, UserRole } from '@/types';
 
-export async function getInquiries(stateId: string, childId: string): Promise<Inquiry[]> {
+// ─── Reads (flat collection) ────────────────────────────────────────────────
+
+/** One-shot fetch — all inquiries for a single child (ProfileDetailPage). */
+export async function getInquiriesForChild(stateId: string, childId: string): Promise<Inquiry[]> {
   const q = query(
-    collection(db, 'states', stateId, 'children', childId, 'inquiries'),
+    collection(db, 'states', stateId, 'inquiries'),
+    where('childId', '==', childId),
     orderBy('submittedAt', 'desc')
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Inquiry);
 }
 
-export interface InquiryPayload {
-  name: string;
-  phone: string;
-  email: string;
-  inquirerState: string;
-  message: string;
-}
-
-export interface InquiryContext {
-  caseworkerUserId: string;
-  childFirstName: string;
-}
-
-export async function submitInquiry(
+/**
+ * Real-time listener — inquiries visible to the current user.
+ * Caseworkers: scoped to their own childIds via caseworkerId.
+ * Supervisors / admins: all inquiries in the state.
+ */
+export function subscribeToInquiries(
   stateId: string,
-  childId: string,
-  payload: InquiryPayload,
-  context: InquiryContext
-): Promise<void> {
-  const inquiriesRef = collection(db, 'states', stateId, 'children', childId, 'inquiries');
+  role: UserRole,
+  userId: string,
+  callback: (inquiries: Inquiry[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const baseRef = collection(db, 'states', stateId, 'inquiries');
 
-  await addDoc(inquiriesRef, {
-    ...payload,
-    submittedAt: serverTimestamp(),
-  });
+  const q =
+    role === 'caseworker'
+      ? query(baseRef, where('caseworkerId', '==', userId), orderBy('submittedAt', 'asc'))
+      : query(baseRef, orderBy('submittedAt', 'asc'));
 
-  // Increment inquiryCount on the child profile
-  await updateDoc(doc(db, 'states', stateId, 'children', childId), {
-    inquiryCount: increment(1),
-  });
-
-  // Notify the caseworker who owns this profile
-  await createInquiryNotification(
-    stateId,
-    context.caseworkerUserId,
-    childId,
-    context.childFirstName,
-    payload.name
+  return onSnapshot(
+    q,
+    (snap) => { callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Inquiry)); },
+    (error) => { onError?.(error); }
   );
+}
+
+/**
+ * Real-time pending count — drives the nav badge.
+ * Silent on error: badge shows 0 rather than crashing the shell.
+ */
+export function subscribeToPendingCount(
+  stateId: string,
+  role: UserRole,
+  userId: string,
+  callback: (count: number) => void
+): Unsubscribe {
+  const baseRef = collection(db, 'states', stateId, 'inquiries');
+
+  const q =
+    role === 'caseworker'
+      ? query(baseRef, where('caseworkerId', '==', userId), where('replyStatus', '==', 'pending'))
+      : query(baseRef, where('replyStatus', '==', 'pending'));
+
+  return onSnapshot(q, (snap) => { callback(snap.size); }, () => { /* badge stays at 0 on error */ });
+}
+
+// ─── Writes (staff only) ────────────────────────────────────────────────────
+
+export async function updateInquiryStatus(
+  stateId: string,
+  inquiryId: string,
+  replyStatus: ReplyStatus,
+  notes?: string
+): Promise<void> {
+  const ref = doc(db, 'states', stateId, 'inquiries', inquiryId);
+  const update: Record<string, unknown> = { replyStatus };
+  if (notes !== undefined) update.notes = notes;
+  await updateDoc(ref, update);
 }

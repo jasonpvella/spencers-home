@@ -396,38 +396,48 @@ async function seedConsents(supervisorUid: string): Promise<void> {
   console.log('  ✓ 2 consent records created');
 }
 
-async function seedInquiries(): Promise<void> {
+async function seedInquiries(caseworkerUid: string): Promise<void> {
   console.log('Creating inquiries...');
 
   const now = new Date();
   const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
   const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
 
-  // Inquiry 1
-  await writeDocument(`states/${STATE_ID}/children/child-004/inquiries/inquiry-001`, {
+  // Flat collection: states/{stateId}/inquiries
+  await writeDocument(`states/${STATE_ID}/inquiries/inquiry-001`, {
     id: 'inquiry-001',
     stateId: STATE_ID,
     childId: 'child-004',
+    childFirstName: 'Aaliyah',
+    caseworkerId: caseworkerUid,
     name: 'The Johnson Family',
+    phone: '402-555-0101',
     email: 'johnson.family@email.com',
+    inquirerState: 'Nebraska',
     message:
       "We've been approved adoptive parents for two years and Aaliyah's profile really spoke to us. We'd love to learn more about her interests and how a meeting might work.",
     submittedAt: fiveDaysAgo,
+    replyStatus: 'pending',
   });
 
-  // Inquiry 2
-  await writeDocument(`states/${STATE_ID}/children/child-004/inquiries/inquiry-002`, {
+  await writeDocument(`states/${STATE_ID}/inquiries/inquiry-002`, {
     id: 'inquiry-002',
     stateId: STATE_ID,
     childId: 'child-004',
+    childFirstName: 'Aaliyah',
+    caseworkerId: caseworkerUid,
     name: 'Rachel Tran',
+    phone: '402-555-0202',
     email: 'rachel.tran@gmail.com',
+    inquirerState: 'Iowa',
     message:
       "Hi — I'm a single parent with an 8-year-old son. Aaliyah sounds like she'd be a wonderful addition to our family. Can you share more about next steps?",
     submittedAt: twoDaysAgo,
+    replyStatus: 'replied_following_up',
+    notes: 'Called on Wednesday, left voicemail. Will try again Friday.',
   });
 
-  console.log('  ✓ 2 inquiries created');
+  console.log('  ✓ 2 inquiries created (flat collection)');
 }
 
 // ─── Main Seed Function ──────────────────────────────────────────────────────
@@ -448,7 +458,7 @@ async function main(): Promise<void> {
     const users = await seedUsers();
     await seedChildren(users.caseworker, users.supervisor);
     await seedConsents(users.supervisor);
-    await seedInquiries();
+    await seedInquiries(users.caseworker);
 
     console.log('\n========================================');
     console.log('Seed completed successfully!');

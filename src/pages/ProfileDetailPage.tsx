@@ -5,7 +5,7 @@ import MediaUpload from '@/components/profile/MediaUpload';
 import { useToast } from '@/components/shared/Toaster';
 import { EDITABLE_STATUSES } from '@/config/constants';
 import { getConsent } from '@/services/consent';
-import { getInquiries } from '@/services/inquiries';
+import { getInquiriesForChild } from '@/services/inquiries';
 import { useState, useEffect } from 'react';
 import type { ProfileStatus, ConsentRecord, Inquiry } from '@/types';
 
@@ -65,7 +65,7 @@ export default function ProfileDetailPage() {
   useEffect(() => {
     if (childId && stateId && child && child.inquiryCount > 0) {
       setInquiriesLoading(true);
-      getInquiries(stateId, childId)
+      getInquiriesForChild(stateId, childId)
         .then(setInquiries)
         .catch((e: unknown) => {
           console.error('[ProfileDetailPage] Failed to load inquiries:', e);

@@ -100,3 +100,83 @@ export const inviteUser = onCall(
     return { success: true, uid: userRecord.uid };
   }
 );
+
+// ─── submitInquiry ──────────────────────────────────────────────────────────
+
+interface SubmitInquiryData {
+  childId: string;
+  stateId: string;
+  name: string;
+  phone: string;
+  email: string;
+  inquirerState: string;
+  message: string;
+}
+
+export const submitInquiry = onCall(async (request) => {
+  const { childId, stateId, name, phone, email, inquirerState, message } =
+    request.data as SubmitInquiryData;
+
+  if (!childId || !stateId) {
+    throw new HttpsError("invalid-argument", "childId and stateId are required.");
+  }
+
+  // Server-side lookup — never trust client-supplied caseworkerId
+  const childRef = admin
+    .firestore()
+    .collection("states")
+    .doc(stateId)
+    .collection("children")
+    .doc(childId);
+
+  const childSnap = await childRef.get();
+  if (!childSnap.exists) {
+    throw new HttpsError("not-found", "Child profile not found.");
+  }
+
+  const child = childSnap.data()!;
+  const caseworkerId: string = child.caseworkerId ?? "";
+  const childFirstName: string = child.firstName ?? "";
+
+  const db = admin.firestore();
+
+  // Write inquiry to flat collection
+  const inquiryRef = await db
+    .collection("states")
+    .doc(stateId)
+    .collection("inquiries")
+    .add({
+      childId,
+      childFirstName,
+      stateId,
+      caseworkerId,
+      name,
+      phone,
+      email,
+      inquirerState,
+      message,
+      submittedAt: admin.firestore.FieldValue.serverTimestamp(),
+      replyStatus: "pending",
+    });
+
+  const notificationWrite = caseworkerId
+    ? db.collection("states").doc(stateId).collection("notifications").add({
+        userId: caseworkerId,
+        stateId,
+        type: "inquiry",
+        childId,
+        childFirstName,
+        inquirerName: name,
+        message: `New inquiry for ${childFirstName} from ${name}`,
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+    : Promise.resolve();
+
+  await Promise.all([
+    childRef.update({ inquiryCount: admin.firestore.FieldValue.increment(1) }),
+    notificationWrite,
+  ]);
+
+  return { success: true, inquiryId: inquiryRef.id };
+});
