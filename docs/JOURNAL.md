@@ -50,6 +50,9 @@
 3. Empty gallery state polish + console error audit
 4. First demo prep: decide which state admin account to use for walkthrough
 
+**Also done (2026-04-14 session 2):**
+- Gallery profile cards now uniform height: `columns` → CSS `grid`, `h-full` on card wrapper, `flex-grow` wrapper around top content, interests+button block always anchored at bottom
+
 ---
 
 ## Technical Decisions
@@ -135,6 +138,12 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-14 — Profile card uniform height polish
+
+Gallery cards now render at uniform height per grid row. Two changes: `GalleryPage` grid switched from CSS `columns` (masonry, no row relationships) to `grid-cols` (rows enforce equal height). `ProfileCard` gained `h-full` to fill the stretched grid cell. Info section restructured: name/bio wrapped in `flex-grow` so it absorbs slack; interests + button sit in a fixed bottom block that's always anchored regardless of how short the bio is.
+
+---
 
 ### 2026-04-14 — Profile ownership + caseworker visibility model
 
