@@ -105,7 +105,7 @@ export default function LandingPage() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('/hero.png')",
+            backgroundImage: "url('/hero3.jpg')",
             filter: 'blur(14px)',
             transform: 'scale(1.12)',
           }}
@@ -122,7 +122,7 @@ export default function LandingPage() {
           <div className="mb-7 relative">
             <div className="w-80 h-[12.5rem] rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
               <img
-                src="/hero.png"
+                src="/hero3.jpg"
                 alt="A child waiting for a forever family"
                 className="w-full h-full object-cover object-right"
               />

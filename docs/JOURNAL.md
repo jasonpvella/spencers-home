@@ -50,6 +50,9 @@
 3. Empty gallery state polish + console error audit
 4. First demo prep: decide which state admin account to use for walkthrough
 
+**Also done (2026-04-16):**
+- Hero image swapped to `Landing_Page_Pic_3.jpg` (warm family-on-floor photo, multiracial). Copied to `public/hero3.jpg`. Old `hero.png` retained. LandingPage updated to reference `hero3.jpg` in both the blurred background layer and the sharp foreground portrait frame.
+
 **Also done (2026-04-14 session 2):**
 - Gallery profile cards now uniform height: `columns` → CSS `grid`, `h-full` on card wrapper, `flex-grow` wrapper around top content, interests+button block always anchored at bottom
 
@@ -138,6 +141,12 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-16 — Hero image swap
+
+Replaced `hero.png` with `Landing_Page_Pic_3.jpg` (copied to `public/hero3.jpg`). New photo: warm-toned, multiracial family (two adults + toddler) sitting on a living room floor together. Fits the mission tone better than the previous image. Old `hero.png` retained in `public/` for reference. Both `backgroundImage` and `<img src>` in `LandingPage.tsx` updated to point at `hero3.jpg`.
+
+---
 
 ### 2026-04-14 — Profile card uniform height polish
 
