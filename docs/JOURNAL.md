@@ -52,6 +52,9 @@
 
 **Also done (2026-04-16):**
 - Hero image swapped to `Landing_Page_Pic_3.jpg` (warm family-on-floor photo, multiracial). Copied to `public/hero3.jpg`. Old `hero.png` retained. LandingPage updated to reference `hero3.jpg` in both the blurred background layer and the sharp foreground portrait frame.
+- Hero image frame doubled in size: section `h-[460px]` → `h-[740px]`, frame `w-80 h-[12.5rem]` → `w-[40rem] h-[25rem]`.
+- Gallery ProfileCard redesign: always shows photo (no video player in card); video indicator pill shown if video exists; video plays on detail page.
+- Gallery layout shift fixed: root cause was `recordProfileView` writing `viewCount` to Firestore from the gallery, which triggered `onSnapshot` re-renders on the same query. Removed view recording from gallery entirely — `PublicProfilePage` already records the view when someone opens a profile, which is the meaningful metric. ProfileCard also hardened: `h-48` fixed image container, `absolute inset-0` img (removed from flow), `line-clamp-2` bio at fixed `h-[2.75rem]`, interests locked to `h-6`.
 
 **Also done (2026-04-14 session 2):**
 - Gallery profile cards now uniform height: `columns` → CSS `grid`, `h-full` on card wrapper, `flex-grow` wrapper around top content, interests+button block always anchored at bottom
@@ -141,6 +144,22 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-16 — Gallery layout shift fix + ProfileCard redesign + hero updates
+
+**Gallery layout shift (root cause):**
+`recordProfileView` was calling `updateDoc` on child documents from the gallery page. Those documents are part of the `subscribeToPublishedChildren` `onSnapshot` query. Every `viewCount` increment triggered a new snapshot, which called `setChildren` with a new array, which re-rendered the entire gallery grid — causing CSS Grid to recalculate row heights and stretch shorter cards to match the tallest, creating blank space. Fix: removed `recordProfileView` from the gallery entirely. `PublicProfilePage` already records views when someone opens a profile (the meaningful metric). Gallery now makes zero Firestore writes and `onSnapshot` only fires on genuine data changes.
+
+**ProfileCard hardened against re-renders:**
+Even with the re-render trigger removed, the card was made layout-shift-proof: image uses `absolute inset-0` so it's out of document flow and can't affect container height; image container changed from `aspect-video` (viewport-width-dependent) to `h-48` (fixed); bio is `line-clamp-2` with explicit `h-[2.75rem]`; interests row is `h-6 overflow-hidden`; all conditional rendering of variable-height blocks removed. Card height is now mathematically identical on every render.
+
+**ProfileCard: photo-only in gallery, video on detail page:**
+Removed video player from gallery cards. Cards always show the first photo. If a video exists, a "▶ Video" pill appears in the corner. Video remains accessible on the profile detail page. This also eliminates the blank space that appeared on photo-only cards when video cards set a taller row height.
+
+**Hero updates:**
+Section height `h-[460px]` → `h-[740px]`. Portrait frame `w-80 h-[12.5rem]` → `w-[40rem] h-[25rem]`. Hero image swapped from `hero.png` to `hero3.jpg` (warm multiracial family, from `Landing_Page_Pic_3.jpg`).
+
+---
 
 ### 2026-04-16 — Hero image swap
 

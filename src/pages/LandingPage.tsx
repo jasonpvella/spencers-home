@@ -100,7 +100,7 @@ export default function LandingPage() {
         Use a photo where a child is sharp in the foreground and family figures
         are visible but softened in the background — the CSS blur handles the rest.
       */}
-      <section ref={heroRef} className="relative z-10 h-[460px] overflow-hidden">
+      <section ref={heroRef} className="relative z-10 h-[740px] overflow-hidden">
         {/* Blurred background layer */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -120,7 +120,7 @@ export default function LandingPage() {
         >
           {/* Foreground portrait — same image, sharp, framed */}
           <div className="mb-7 relative">
-            <div className="w-80 h-[12.5rem] rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
+            <div className="w-[40rem] h-[25rem] rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
               <img
                 src="/hero3.jpg"
                 alt="A child waiting for a forever family"
