@@ -100,29 +100,34 @@ export default function LandingPage() {
         Use a photo where a child is sharp in the foreground and family figures
         are visible but softened in the background — the CSS blur handles the rest.
       */}
-      <section ref={heroRef} className="relative z-10 h-[740px] overflow-hidden">
+      <section ref={heroRef} className="relative z-10 overflow-hidden">
         {/* Blurred background layer */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('/hero3.jpg')",
+            backgroundImage: "url('/Landing_Page_Pic_1.jpg')",
             filter: 'blur(14px)',
             transform: 'scale(1.12)',
           }}
         />
-        {/* Warm dark overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-amber-950/60" />
+        {/* Top overlay — darkens for nav + text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/40 to-transparent" />
+        {/* Bottom fade — wide, soft, fully opaque at base so no muddy photo bleed */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, transparent 65%, #faf9f7 100%)' }}
+        />
 
         {/* Content */}
         <motion.div
           style={{ opacity: heroOpacity, scale: heroScale }}
-          className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6"
+          className="relative z-10 flex flex-col items-center text-center px-6 pt-24 pb-10"
         >
           {/* Foreground portrait — same image, sharp, framed */}
           <div className="mb-7 relative">
-            <div className="w-[40rem] h-[25rem] rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
+            <div className="w-[32rem] h-[20rem] rounded-2xl overflow-hidden border-4 border-white/70 shadow-2xl mx-auto">
               <img
-                src="/hero3.jpg"
+                src="/Landing_Page_Pic_1.jpg"
                 alt="A child waiting for a forever family"
                 className="w-full h-full object-cover object-right"
               />
@@ -146,7 +151,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Category cards ──────────────────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 mt-8 relative z-20">
+      <section className="max-w-5xl mx-auto px-4 mt-[26px] relative z-20">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {CATEGORIES.map((cat) => (
             <Link

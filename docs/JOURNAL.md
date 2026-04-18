@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Profile ownership + caseworker visibility control. Caseworkers can now only see and edit profiles assigned to them (default) or all profiles (pool mode, state admin opt-in). Supervisors and admins always see everything. Ownership is enforced at the Firestore rules layer — not just the UI.
+**Current Focus:** Landing page hero polish. Hero is now content-height (auto), photo 20% smaller, gradient split into two layers (top dark overlay for text legibility, bottom soft fade to page background). Cards sit 26px below hero.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -49,6 +49,13 @@
 2. Strip SSO from login page and state config UI
 3. Empty gallery state polish + console error audit
 4. First demo prep: decide which state admin account to use for walkthrough
+
+**Also done (2026-04-17):**
+- Hero image swapped to `Landing_Page_Pic_1.jpg` (already in `public/`).
+- Hero changed from fixed `h-[660px]` to content-height — section now ends immediately after the "Meet Our Kids" button. Content uses `pt-24 pb-10` for top/bottom padding.
+- Photo frame reduced 20%: `w-[40rem] h-[25rem]` → `w-[32rem] h-[20rem]`.
+- Gradient split into two independent layers: (1) top overlay `from-black/55 via-black/40 to-transparent` keeps headline + button readable; (2) full-height bottom fade `linear-gradient(to bottom, transparent 65%, #faf9f7 100%)` blends hero into page background without muddy photo bleed, since it ends fully opaque.
+- Category cards gap: settled at `mt-[26px]` (26px) below hero.
 
 **Also done (2026-04-16):**
 - Hero image swapped to `Landing_Page_Pic_3.jpg` (warm family-on-floor photo, multiracial). Copied to `public/hero3.jpg`. Old `hero.png` retained. LandingPage updated to reference `hero3.jpg` in both the blurred background layer and the sharp foreground portrait frame.
@@ -144,6 +151,12 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-17 — Landing page hero polish
+
+Swapped hero image to `Landing_Page_Pic_1.jpg` (already in `public/`). Hero changed from fixed height (`h-[660px]`) to content-height — section ends immediately after the "Meet Our Kids" button using `pt-24 pb-10` padding on the content div. Photo frame reduced 20% (`w-[40rem] h-[25rem]` → `w-[32rem] h-[20rem]`). Gradient architecture redesigned: previously a single gradient fading to the page background color created a muddy bleed at the bottom edge where blurred photo colors mixed with the semi-transparent white. Fixed by splitting into two layers — (1) `from-black/55 via-black/40 to-transparent` over the full hero for text legibility, (2) a separate full-height div with `linear-gradient(to bottom, transparent 65%, #faf9f7 100%)` that goes fully opaque at the bottom so no photo color bleeds through. Category cards gap settled at `mt-[26px]`.
+
+---
 
 ### 2026-04-16 — Gallery layout shift fix + ProfileCard redesign + hero updates
 
