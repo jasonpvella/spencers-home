@@ -52,6 +52,10 @@
 4. Empty gallery state polish + console error audit
 5. Production deploy (`firebase deploy`)
 
+**Also done (2026-04-20 follow-up):**
+- Camera added to profile creation flow: after saving a new profile, page transitions to an inline "Add Photos & Video" step instead of navigating away. Caseworker captures media immediately, then clicks "Continue to profile →".
+- Stale-cache chunk error fixed permanently: `lazyWithReload` wrapper auto-reloads on failed lazy import (session storage flag prevents infinite loop); `index.html` served with `Cache-Control: no-cache` header so browsers never cache the entry point.
+
 **Also done (2026-04-16):**
 - Hero image swapped to `Landing_Page_Pic_3.jpg` (warm family-on-floor photo, multiracial). Copied to `public/hero3.jpg`. Old `hero.png` retained. LandingPage updated to reference `hero3.jpg` in both the blurred background layer and the sharp foreground portrait frame.
 - Hero image frame doubled in size: section `h-[460px]` → `h-[740px]`, frame `w-80 h-[12.5rem]` → `w-[40rem] h-[25rem]`.
@@ -146,6 +150,16 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-20 — Camera in profile creation + stale-cache fix
+
+**Camera added to profile creation flow (`ProfileFormPage.tsx`):**
+Previously, creating a new profile immediately navigated to the detail page. Now, after the profile saves, the form is replaced inline with an "Add Photos & Video" step — the same `MediaUpload` component (Camera tab default) shown on the detail page. The caseworker can capture media right in the creation flow, then click "Continue to profile →". Skip is implicit — clicking the button without capturing anything goes straight to the detail page. The key technical constraint: `MediaUpload` needs a real `childId` (Firestore doc) to write to, so media capture can't happen before the profile is saved. Solved with a `savedChildId` state: on successful create, `navigate()` is replaced with `setSavedChildId(newId)`, which also triggers `useChild` to load the new child object for passing to `MediaUpload`.
+
+**Stale-cache chunk error fixed (`App.tsx` + `firebase.json`):**
+After any deploy, Vite generates new chunk filenames (content hashes). Users with a cached `index.html` from a previous deploy try to fetch old chunk URLs that no longer exist, causing "failed to fetch dynamically imported module." Fixed two ways: (1) `lazyWithReload` wrapper replaces all `lazy()` calls — on chunk load failure it sets a `sessionStorage` flag and calls `window.location.reload()`, which fetches fresh `index.html` and correct chunk URLs (flag prevents infinite reload loop if chunks are genuinely missing); (2) `firebase.json` hosting headers: `index.html` served with `Cache-Control: no-cache, no-store, must-revalidate` — browsers never cache the entry point, so chunk URLs are always current after a deploy.
+
+---
 
 ### 2026-04-20 — In-app camera capture: CameraCapture component + storage resumable upload
 
