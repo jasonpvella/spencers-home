@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** Landing page hero polish. Hero is now content-height (auto), photo 20% smaller, gradient split into two layers (top dark overlay for text legibility, bottom soft fade to page background). Cards sit 26px below hero.
+**Current Focus:** In-app camera capture built and deployed. Caseworkers can now take photos and record video (2-min cap) directly in the browser — media goes camera → RAM → Firebase Storage, never touching the device file system or photo library. Phase 4 remaining: consent form generalization, core loop walk, production deploy.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -31,12 +31,13 @@
   - FavoritesPage: saved profiles for family users ✅
   - AccountSettingsPage (`/settings`): display name update (Auth + Firestore) + password change (reauthenticate → updatePassword) ✅
   - **InquiriesPage (`/inquiries`):** flat collection, sorted oldest-first, role-scoped (caseworker sees own; supervisor/admin sees all), repeat-inquirer badge, caseworker name/email, inline status dropdown (6 statuses), inline notes edit (Enter/Escape), live pending count badge in nav ✅
-- **MediaUpload component:** react-dropzone, per-file progress bar, photo + video ✅
+- **MediaUpload component:** Camera tab (default) + Upload File tab; camera uses `getUserMedia` + `MediaRecorder` — media never hits device storage ✅
+- **CameraCapture component:** live preview (rear-facing, 720p, audio), photo via canvas (1200px max / JPEG 85%), video via MediaRecorder (2-min hard cap + countdown), `uploadBytesResumable` with progress bar, `beforeunload` guard during upload, permission-denied error state ✅
 - **Inquiry submission:** `submitInquiry` Cloud Function — server-side child lookup, writes flat inquiry doc, increments `inquiryCount`, sends notification (parallel writes) ✅
 - **Toast system:** Radix Toast, success/error/info ✅
 - **Firestore security rules:** full audit, flat inquiry rules (create: false; read/update: role+stateId scoped; old subcollection locked); **ownership-scoped child read/write rules deployed** ✅
 - **Firestore indexes:** children (status+age, status+gender, status+lastUpdatedAt) + notifications (userId+read+createdAt) ✅
-- **Storage rules deployed** ✅
+- **Storage rules deployed** — MIME type + size enforcement, auth-gated writes ✅
 - **Sibling group model:** single-profile model — `gender: 'sibling_group'` drives category filtering, comma-separated names/ages embedded in one Firestore doc ✅
 - **Emulator seed script, admin bootstrap script, platform admin live** ✅
 - **Error boundary + `window.onerror`/`unhandledrejection` handlers** in `main.tsx` and `index.html` ✅
@@ -46,16 +47,10 @@
 
 **Next session — in order:**
 1. Walk the core loop end-to-end on both desktop and mobile (caseworker + supervisor + admin)
-2. Strip SSO from login page and state config UI
-3. Empty gallery state polish + console error audit
-4. First demo prep: decide which state admin account to use for walkthrough
-
-**Also done (2026-04-17):**
-- Hero image swapped to `Landing_Page_Pic_1.jpg` (already in `public/`).
-- Hero changed from fixed `h-[660px]` to content-height — section now ends immediately after the "Meet Our Kids" button. Content uses `pt-24 pb-10` for top/bottom padding.
-- Photo frame reduced 20%: `w-[40rem] h-[25rem]` → `w-[32rem] h-[20rem]`.
-- Gradient split into two independent layers: (1) top overlay `from-black/55 via-black/40 to-transparent` keeps headline + button readable; (2) full-height bottom fade `linear-gradient(to bottom, transparent 65%, #faf9f7 100%)` blends hero into page background without muddy photo bleed, since it ends fully opaque.
-- Category cards gap: settled at `mt-[26px]` (26px) below hero.
+2. State-specific consent form template (generalize ne-draft-v1 for any state)
+3. Strip SSO from login page and state config UI
+4. Empty gallery state polish + console error audit
+5. Production deploy (`firebase deploy`)
 
 **Also done (2026-04-16):**
 - Hero image swapped to `Landing_Page_Pic_3.jpg` (warm family-on-floor photo, multiracial). Copied to `public/hero3.jpg`. Old `hero.png` retained. LandingPage updated to reference `hero3.jpg` in both the blurred background layer and the sharp foreground portrait frame.
@@ -151,6 +146,30 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-20 — In-app camera capture: CameraCapture component + storage resumable upload
+
+**What was built:**
+Caseworkers can now take photos and record video directly inside the browser. Media goes camera → browser RAM → Firebase Storage — it never touches the device file system, photo library, or cloud backup (iCloud, Google Photos). This was a deliberate privacy decision: child media should not persist on caseworker personal devices.
+
+**Three files changed:**
+
+`services/storage.ts` — `uploadMedia` switched from `uploadBytes` to `uploadBytesResumable`. Now accepts `File | Blob` (blobs come from camera capture). New optional params: `onProgress: (percent: number) => void` for UI progress bars, and `captureMethod: 'in_app_camera' | 'file_upload'` (default `'file_upload'`). Audit log details now include `captureMethod`, `fileSize`, and `mimeType` — deferred metadata strategy: no schema change to the child profile, but data is preserved in the audit trail for Phase 5 transcoding work.
+
+`components/profile/CameraCapture.tsx` (new) — Full camera capture component. `getUserMedia` with rear-facing preference (`facingMode: environment`), 720p, audio always on. Photo mode: frame drawn to a hidden `<canvas>`, resized to 1200px max, exported as JPEG at 85% quality (compresses a 6MB iPhone photo to ~500KB before upload). Video mode: `MediaRecorder` collects chunks into RAM; auto-stops and triggers upload at 120 seconds; manual Stop button also available. Visible countdown timer during recording. Safari outputs mp4/H.264, Chrome/Android outputs webm — handled by `getSupportedMimeType()` falling through a priority list. `uploadBytesResumable` shows a % progress bar. `beforeunload` guard fires on desktop during active uploads. Handles: camera permission denied, unsupported browser, upload failures — all with clear error messages and a "Try again" path.
+
+`components/profile/MediaUpload.tsx` — Added Camera / Upload File tabs. Camera is the default. Existing photos and video status remain visible above the tabs regardless of active tab. File upload dropzones unchanged, moved under the Upload File tab. `captureMethod: 'file_upload'` added to both dropzone upload calls.
+
+**Storage rules:** Already had MIME type validation and size limits — no changes needed.
+
+**What's deferred:**
+- Video metadata (`duration`, `estimated_resolution`) not stored on the child profile — would require changing `videoUrl` from string to object, breaking display in 3 pages. Logged to audit record only for now; migrate with Phase 5 transcoding.
+- `beforeunload` on iOS Safari is ignored by the browser — resumable upload (`uploadBytesResumable`) is the real safety net for interrupted uploads on mobile.
+- Offline queue (capture → stage in IndexedDB → upload on reconnect) deferred to Phase 5.
+
+TypeScript: 0 errors.
+
+---
 
 ### 2026-04-17 — Landing page hero polish
 

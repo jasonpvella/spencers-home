@@ -1,6 +1,7 @@
 import {
   ref,
   uploadBytes,
+  uploadBytesResumable,
   getDownloadURL,
   deleteObject,
 } from 'firebase/storage';
@@ -29,19 +30,31 @@ export async function uploadSponsorLogo(file: File): Promise<string> {
 export async function uploadMedia(params: {
   stateId: string;
   childId: string;
-  file: File;
+  file: File | Blob;
   uploadedBy: string;
+  captureMethod?: 'in_app_camera' | 'file_upload';
+  onProgress?: (percent: number) => void;
 }): Promise<string> {
-  const { stateId, childId, file, uploadedBy } = params;
-  const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const { stateId, childId, file, uploadedBy, captureMethod = 'file_upload', onProgress } = params;
+
+  const fileName = file instanceof File
+    ? `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    : `${Date.now()}_capture.${file.type.split('/')[1]?.split(';')[0] ?? 'bin'}`;
+
+  if (file.size === 0) throw new Error('File appears to be empty (0 bytes). Please try again.');
+
   const storageRef = ref(storage, mediaPath(stateId, childId, fileName));
 
-  if (file.size === 0) throw new Error(`File "${file.name}" appears to be empty (0 bytes). Please try selecting it again.`);
-
-  await uploadBytes(storageRef, file);
-
   // getDownloadURL returns a token-based URL (not a public URL)
-  const signedUrl = await getDownloadURL(storageRef);
+  const signedUrl = await new Promise<string>((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on(
+      'state_changed',
+      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      () => getDownloadURL(task.snapshot.ref).then(resolve).catch(reject),
+    );
+  });
 
   await writeAuditLog({
     stateId,
@@ -49,7 +62,13 @@ export async function uploadMedia(params: {
     targetId: childId,
     targetType: 'media',
     performedBy: uploadedBy,
-    details: { fileName, path: storageRef.fullPath },
+    details: {
+      fileName,
+      path: storageRef.fullPath,
+      captureMethod,
+      fileSize: file.size,
+      mimeType: file.type,
+    },
   });
 
   return signedUrl;
