@@ -7,20 +7,37 @@ import StaffPreviewBar from '@/components/shared/StaffPreviewBar';
 import type { UserRole } from '@/types';
 import type { ReactNode } from 'react';
 
-const LandingPage = lazy(() => import('@/pages/LandingPage'));
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
-const GalleryPage = lazy(() => import('@/pages/GalleryPage'));
-const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'));
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
-const ProfileFormPage = lazy(() => import('@/pages/ProfileFormPage'));
-const ProfileDetailPage = lazy(() => import('@/pages/ProfileDetailPage'));
-const ConsentFormPage = lazy(() => import('@/pages/ConsentFormPage'));
-const AdminUsersPage = lazy(() => import('@/pages/AdminUsersPage'));
-const StateConfigPage = lazy(() => import('@/pages/StateConfigPage'));
-const AdminSponsorsPage = lazy(() => import('@/pages/AdminSponsorsPage'));
-const AccountSettingsPage = lazy(() => import('@/pages/AccountSettingsPage'));
-const InquiriesPage = lazy(() => import('@/pages/InquiriesPage'));
+// Wraps lazy imports so a stale-cache chunk error after a new deploy triggers
+// a one-time reload rather than showing a blank error screen.
+function lazyWithReload<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(() =>
+    factory().catch(() => {
+      if (!sessionStorage.getItem('chunk-reload')) {
+        sessionStorage.setItem('chunk-reload', '1');
+        window.location.reload();
+        return new Promise<{ default: T }>(() => {});
+      }
+      return factory();
+    })
+  );
+}
+
+const LandingPage = lazyWithReload(() => import('@/pages/LandingPage'));
+const LoginPage = lazyWithReload(() => import('@/pages/LoginPage'));
+const RegisterPage = lazyWithReload(() => import('@/pages/RegisterPage'));
+const GalleryPage = lazyWithReload(() => import('@/pages/GalleryPage'));
+const PublicProfilePage = lazyWithReload(() => import('@/pages/PublicProfilePage'));
+const DashboardPage = lazyWithReload(() => import('@/pages/DashboardPage'));
+const ProfileFormPage = lazyWithReload(() => import('@/pages/ProfileFormPage'));
+const ProfileDetailPage = lazyWithReload(() => import('@/pages/ProfileDetailPage'));
+const ConsentFormPage = lazyWithReload(() => import('@/pages/ConsentFormPage'));
+const AdminUsersPage = lazyWithReload(() => import('@/pages/AdminUsersPage'));
+const StateConfigPage = lazyWithReload(() => import('@/pages/StateConfigPage'));
+const AdminSponsorsPage = lazyWithReload(() => import('@/pages/AdminSponsorsPage'));
+const AccountSettingsPage = lazyWithReload(() => import('@/pages/AccountSettingsPage'));
+const InquiriesPage = lazyWithReload(() => import('@/pages/InquiriesPage'));
 
 const CASEWORKER_ROLES: UserRole[] = ['caseworker', 'supervisor', 'agency_admin', 'state_admin', 'platform_admin'];
 
