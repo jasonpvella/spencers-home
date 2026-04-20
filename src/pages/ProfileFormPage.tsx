@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import type { Resolver } from 'react-hook-form';
@@ -36,9 +36,12 @@ export default function ProfileFormPage({ mode }: Props) {
   const stateId = user?.stateId ?? '';
   const userId = user?.id ?? '';
 
+  const [savedChildId, setSavedChildId] = useState<string | null>(null);
+
+  const effectiveChildId = savedChildId ?? (mode === 'edit' ? (childId ?? '') : '');
   const { child, loading: loadingChild, reload } = useChild(
-    mode === 'edit' ? stateId : '',
-    mode === 'edit' ? (childId ?? '') : ''
+    effectiveChildId ? stateId : '',
+    effectiveChildId
   );
 
   const { create, update, saving, error } = useChildActions(stateId, userId);
@@ -114,7 +117,7 @@ export default function ProfileFormPage({ mode }: Props) {
     if (mode === 'create') {
       const newId = await create(payload);
       toast('Profile created', 'success');
-      navigate(`/profile/${newId}`);
+      setSavedChildId(newId);
     } else if (childId) {
       await update(childId, payload);
       toast('Profile saved', 'success');
@@ -126,6 +129,37 @@ export default function ProfileFormPage({ mode }: Props) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 text-sm text-gray-400 text-center">
         Loading profile…
+      </div>
+    );
+  }
+
+  // After create: show media capture step before navigating to the profile
+  if (savedChildId) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Add Photos & Video</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Profile saved as draft. Capture media now or skip and add it later.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          {child ? (
+            <MediaUpload child={child} userId={userId} onUpdate={reload} />
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-4">Loading…</p>
+          )}
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => navigate(`/profile/${savedChildId}`)}
+            className="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors"
+          >
+            Continue to profile →
+          </button>
+        </div>
       </div>
     );
   }
