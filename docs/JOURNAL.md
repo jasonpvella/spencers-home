@@ -4,7 +4,7 @@
 
 ## Executive Snapshot
 
-**Current Focus:** In-app camera capture built and deployed. Caseworkers can now take photos and record video (2-min cap) directly in the browser — media goes camera → RAM → Firebase Storage, never touching the device file system or photo library. Phase 4 remaining: consent form generalization, core loop walk, production deploy.
+**Current Focus:** Bug fix deployed — public profile page now shows all photos alongside video. Phase 4 remaining: consent form generalization, core loop walk, production deploy.
 
 **What's done:**
 - React 18 + Vite 5 + TypeScript (strict) + Tailwind CSS 3 ✅
@@ -153,6 +153,14 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-20 — Public profile media display bug fixed
+
+`PublicProfilePage` was silently dropping photos when a video was also present. Root cause: the hero block showed the video and used `photoUrls[0]` only as the video poster — it was never rendered as a standalone photo. The additional photos grid showed `photoUrls.slice(1)`, so `photoUrls[0]` was never displayed at all. When no video existed, `photoUrls[0]` went in the hero correctly, but only one photo ever appeared in the hero regardless of how many were uploaded.
+
+Fix: when a video is present, the grid now renders all `photoUrls` (not `slice(1)`). When no video, behavior is unchanged — first photo in hero, rest in grid. One-line logic change in `PublicProfilePage.tsx`.
+
+---
 
 ### 2026-04-20 — Stale-cache fix corrected (firebase.json headers + sessionStorage guard)
 

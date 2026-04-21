@@ -129,20 +129,23 @@ export default function PublicProfilePage() {
         </div>
 
         {/* Additional photos */}
-        {child.photoUrls.length > 1 && (
-          <div className="grid grid-cols-3 gap-2">
-            {child.photoUrls.slice(1).map((url, i) => (
-              <img
-                key={i}
-                src={url}
-                alt={`${child.firstName} photo ${i + 2}`}
-                className="rounded-xl object-cover aspect-square w-full"
-                loading="lazy"
-                decoding="async"
-              />
-            ))}
-          </div>
-        )}
+        {(() => {
+          const gridPhotos = hasVideo ? child.photoUrls : child.photoUrls.slice(1);
+          return gridPhotos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2">
+              {gridPhotos.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`${child.firstName} photo ${i + (hasVideo ? 1 : 2)}`}
+                  className="rounded-xl object-cover aspect-square w-full"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ))}
+            </div>
+          ) : null;
+        })()}
 
         {/* Child info */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
