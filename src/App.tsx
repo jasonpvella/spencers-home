@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthListener } from '@/hooks/useAuth';
 import RequireAuth from '@/components/shared/RequireAuth';
@@ -59,6 +59,9 @@ function AuthShell({ children }: { children: ReactNode }) {
 
 function AppRoutes() {
   useAuthListener();
+  // Chunks loaded successfully — clear the reload-guard so the next deploy's
+  // stale-cache error can trigger a fresh reload instead of being silently skipped.
+  useEffect(() => { sessionStorage.removeItem('chunk-reload'); }, []);
 
   return (
     <Suspense fallback={<PageFallback />}>

@@ -52,9 +52,12 @@
 4. Empty gallery state polish + console error audit
 5. Production deploy (`firebase deploy`)
 
+**Also done (2026-04-20 follow-up #2):**
+- Stale-cache fix was incomplete — patched two bugs. (1) `firebase.json` `no-cache` header was on `source: "/index.html"`, which only matches the literal path. Any URL served via the `**` rewrite (e.g. `/profile/new`, `/dashboard`) got `index.html` without that header, so browsers cached it. Changed to `source: "**"` + added `source: "/assets/**"` override with immutable caching for hashed JS/CSS chunks. (2) `chunk-reload` flag in sessionStorage was never cleared after a successful recovery — if another deploy happened in the same tab session, the flag was already set and the reload was silently skipped. Fixed by clearing it in `AppRoutes` `useEffect` on mount.
+
 **Also done (2026-04-20 follow-up):**
 - Camera added to profile creation flow: after saving a new profile, page transitions to an inline "Add Photos & Video" step instead of navigating away. Caseworker captures media immediately, then clicks "Continue to profile →".
-- Stale-cache chunk error fixed permanently: `lazyWithReload` wrapper auto-reloads on failed lazy import (session storage flag prevents infinite loop); `index.html` served with `Cache-Control: no-cache` header so browsers never cache the entry point.
+- Stale-cache chunk error: initial fix attempt (see follow-up #2 above for the corrected version).
 
 **Also done (2026-04-16):**
 - Hero image swapped to `Landing_Page_Pic_3.jpg` (warm family-on-floor photo, multiracial). Copied to `public/hero3.jpg`. Old `hero.png` retained. LandingPage updated to reference `hero3.jpg` in both the blurred background layer and the sharp foreground portrait frame.
@@ -150,6 +153,22 @@ State admin can create user accounts directly via "Invite user" modal on AdminUs
 ---
 
 ## Historical Log
+
+### 2026-04-20 — Stale-cache fix corrected (firebase.json headers + sessionStorage guard)
+
+Two bugs in the original stale-cache fix from earlier today.
+
+**Bug 1 — `firebase.json` header source too narrow:**
+`source: "/index.html"` only applies to the literal path `/index.html`. Firebase Hosting serves `index.html` for all app routes via the `"**" → "/index.html"` rewrite rule, but the `no-cache` header rule is matched against the *incoming request path*, not the destination. So `/profile/new`, `/dashboard`, etc. all got `index.html` without any cache headers — browsers cached them freely. After a deploy with new chunk filenames, a browser reload on those URLs still served the stale `index.html` pointing to the old (now-404) chunks.
+
+Fix: changed to `source: "**"` (covers all incoming request paths), then added `source: "/assets/**"` with `public, max-age=31536000, immutable` listed after — Firebase applies all matching header rules in order, with later rules overriding earlier ones for the same key. Hashed JS/CSS chunks get the immutable cache header; everything else gets no-cache.
+
+**Bug 2 — `chunk-reload` sessionStorage flag never cleared:**
+Once the reload guard was set (from any previous chunk error recovery), it persisted in sessionStorage for the lifetime of the tab. The next deploy's chunk failure saw the flag already set, skipped the reload, and called the failing `factory()` directly — showing the error instead of recovering. Fixed by clearing the flag in `AppRoutes`'s `useEffect` on mount. If the app booted far enough to render `AppRoutes`, the chunks are fine — safe to reset the guard for future failures.
+
+TypeScript: 0 errors. Deployed.
+
+---
 
 ### 2026-04-20 — Camera in profile creation + stale-cache fix
 
